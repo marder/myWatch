@@ -1,4 +1,5 @@
 const config = require('../config');
+const allocator = require('./allocator');
 
 /**
  * Forward-fill lookup: Find the latest value on or before the target date.
@@ -349,6 +350,12 @@ function generateConclusions(totalScore, p1, p2, p3, p4, metrics, indicators, ta
   // 5. GPW Indices Overview
   const gpwIndices = extractGpwIndices(indicators, targetDate);
 
+  // 6. Portfolio & OKI Allocation Recommendation
+  const portfolioRecommendation = allocator.getFullPortfolioRecommendation(totalScore, {
+    spread_10y_2y: p1.spread,
+    wig_sma200_diff: p4.smaDiff,
+  });
+
   return {
     status,
     conclusions: {
@@ -358,6 +365,7 @@ function generateConclusions(totalScore, p1, p2, p3, p4, metrics, indicators, ta
       tactical_stance: tacticalStance,
       plain_language: plainLanguage,
       gpw_indices: gpwIndices,
+      portfolio_recommendation: portfolioRecommendation,
     }
   };
 }

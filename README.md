@@ -50,6 +50,12 @@ Aplikacja oblicza zagregowany **Wskaźnik Presji Kryzysowej (0–100 pkt)**, for
    * **Wysyłka kopii zapasowej na e-mail (SMTP)** — na żądanie oraz w automatycznym harmonogramie niedzielnym.
    * **Głęboki backfill danych** — zasilanie bazy historią na 60, 120 lub 250 sesji giełdowych.
 
+7. **Modelowy Portfel & Strategia OKI (Osobiste Konta Inwestycyjne od 2027 r.):**
+   * Dynamiczny podział aktywów w portfelu dopasowany do bieżącego reżimu makroekonomicznego oraz profilu inwestora (41 lat) minimalizującego ryzyko.
+   * Konkretne instrumenty giełdowe i detaliczne: **Vanguard FTSE All-World (VWCE)**, **Beta ETF WIG20TR / mWIG40TR**, **Beta ETF TBSP** oraz obligacje detaliczne **TOS / COI**.
+   * **Interaktywny Kalkulator Dopłat:** automatyczne rozbicie comiesięcznej kwoty w PLN na poszczególne aktywa i tickery.
+   * Przewodnik po zasadach OKI: limit 100 000 zł bez podatku Belki, podlimit 25 000 zł na bezpieczne depozyty/obligacje detaliczne, min. 75 000 zł na instrumenty rynku kapitałowego oraz pełna płynność środków.
+
 ---
 
 ## 🧮 4-Filarowy Model Scoringowy (0–100 Punktów)
@@ -142,6 +148,8 @@ Wszystkie parametry konfiguracyjne i poświadczenia zarządzane są przez plik `
 ### Punkty końcowe publiczne:
 * `GET /api/latest` — Zwraca najnowszy odczyt wskaźnika ryzyka, filary, ostrzeżenia, wnioski, diagnozę prostym językiem oraz notowania indeksów GPW.
 * `GET /api/history?limit=60` — Chronologiczny szereg czasowy (ASC) do wykresów i tabel.
+* `GET /api/allocation` — Zwraca aktualne dynamiczne wagi portfela, konkretne tickery instrumentów oraz wytyczne OKI.
+* `POST /api/allocation/calculate` — Rozbija comiesięczną kwotę dopłaty w PLN (`{ amountPln: 1500 }`) na poszczególne instrumenty.
 * `GET /api/news` — Lista najświeższych wiadomości gospodarczych z Bankier.pl z bezpośrednimi linkami.
 * `GET /api/gpw-indices` — Zestawienie aktualnych kursów i statusów indeksów GPW (WIG, WIG20, mWIG40, sWIG80, WIG-Banki).
 * `POST /api/refresh` — Natychmiastowe pobranie świeżych danych i rekalkulacja modelu.

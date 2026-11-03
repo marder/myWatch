@@ -5,6 +5,7 @@ const config = require('./config');
 const db = require('./src/db');
 const fetcher = require('./src/fetcher');
 const analyzer = require('./src/analyzer');
+const allocator = require('./src/allocator');
 const scheduler = require('./src/scheduler');
 const auth = require('./src/auth');
 const mailer = require('./src/mailer');
@@ -189,6 +190,10 @@ app.get('/api/latest', (req, res) => {
     if (!latest) {
       return res.status(404).json({ error: 'Brak danych. Baza danych może być w trakcie inicjalizacji.' });
     }
+    // Ensure portfolio_recommendation is always present even on legacy records
+    if (latest.conclusions && !latest.conclusions.portfolio_recommendation) {
+      latest.conclusions.portfolio_recommendation = allocator.getFullPortfolioRecommendation(latest.risk_score, latest);
+    }
     res.json(latest);
   } catch (err) {
     console.error('Error fetching /api/latest:', err);
@@ -258,6 +263,40 @@ app.get('/api/gpw-indices', (req, res) => {
   } catch (err) {
     console.error('Error in /api/gpw-indices:', err);
     res.status(500).json({ error: 'Nie udało się pobrać notowań GPW', message: err.message });
+  }
+});
+
+/**
+ * GET /api/allocation
+ * Returns dynamic OKI portfolio allocation weights and concrete instruments
+ */
+app.get('/api/allocation', (req, res) => {
+  try {
+    const latest = db.getLatestReading();
+    const riskScore = latest ? latest.risk_score : 15;
+    const recommendation = allocator.getFullPortfolioRecommendation(riskScore, latest || {});
+    res.json(recommendation);
+  } catch (err) {
+    console.error('Error in /api/allocation:', err);
+    res.status(500).json({ error: 'Nie udało się wygenerować rekomendacji alokacji', message: err.message });
+  }
+});
+
+/**
+ * POST /api/allocation/calculate
+ * Calculates monthly contribution breakdown in PLN across specific instruments
+ * Body: { amountPln: number }
+ */
+app.post('/api/allocation/calculate', (req, res) => {
+  try {
+    const amountPln = parseFloat(req.body?.amountPln) || 0;
+    const latest = db.getLatestReading();
+    const riskScore = latest ? latest.risk_score : 15;
+    const split = allocator.calculateContributionSplit(amountPln, riskScore, latest || {});
+    res.json(split);
+  } catch (err) {
+    console.error('Error in /api/allocation/calculate:', err);
+    res.status(500).json({ error: 'Błąd podczas kalkulacji podziału wpłaty', message: err.message });
   }
 });
 

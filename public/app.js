@@ -115,6 +115,9 @@ async function loadDashboard() {
     renderPlainLanguageSection(state.latest?.conclusions?.plain_language);
     renderGpwIndices(state.latest?.conclusions?.gpw_indices);
     renderHeroSection(state.latest);
+    const allocRec = state.latest?.conclusions?.portfolio_recommendation || 
+      (await fetch('/api/allocation').then(r => r.ok ? r.json() : null).catch(() => null));
+    renderAllocationSection(allocRec);
     renderKpiCards(state.latest);
     renderWarnings(state.latest.warnings || []);
     renderNewsSection(state.news);
@@ -359,6 +362,239 @@ function renderWarnings(warnings) {
       <span class="leading-relaxed">${warning}</span>
     </div>
   `).join('');
+}
+
+/**
+ * Render OKI Portfolio Allocation Section & Core Instruments
+ */
+function renderAllocationSection(rec) {
+  if (!rec) return;
+
+  // 1. Stance badge & regime label
+  const stanceBadge = document.getElementById('alloc-stance-badge');
+  if (stanceBadge) {
+    stanceBadge.textContent = rec.strategyStance || 'Zrównoważona Akumulacja';
+    if (rec.regime === 'ALARM KRYZYSOWY') {
+      stanceBadge.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm bg-rose-500/15 text-rose-300 border-rose-500/30 animate-pulse';
+    } else if (rec.regime === 'PODWYŻSZONE RYZYKO') {
+      stanceBadge.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm bg-orange-500/15 text-orange-300 border-orange-500/30';
+    } else if (rec.regime === 'OSTRZEŻENIE') {
+      stanceBadge.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm bg-amber-500/15 text-amber-300 border-amber-500/30';
+    } else {
+      stanceBadge.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+    }
+  }
+
+  const regimeLabel = document.getElementById('alloc-regime-label');
+  if (regimeLabel) {
+    regimeLabel.textContent = rec.regime || 'STABILNY';
+  }
+
+  const actionSummary = document.getElementById('alloc-action-summary');
+  if (actionSummary) {
+    actionSummary.textContent = rec.actionSummary || 'Brak wytycznych alokacyjnych.';
+  }
+
+  // 2. Weights & Visual Progress Bar
+  const weights = rec.weights || { globalEquities: 50, polishEquities: 15, treasuryBonds: 30, cashAndGold: 5 };
+  
+  const wGlobal = weights.globalEquities ?? 50;
+  const wGpw = weights.polishEquities ?? 15;
+  const wBonds = weights.treasuryBonds ?? 30;
+  const wCash = weights.cashAndGold ?? 5;
+
+  const wGlobalEl = document.getElementById('weight-global-pct');
+  const wGpwEl = document.getElementById('weight-gpw-pct');
+  const wBondsEl = document.getElementById('weight-bonds-pct');
+  const wCashEl = document.getElementById('weight-cash-pct');
+
+  if (wGlobalEl) wGlobalEl.textContent = wGlobal;
+  if (wGpwEl) wGpwEl.textContent = wGpw;
+  if (wBondsEl) wBondsEl.textContent = wBonds;
+  if (wCashEl) wCashEl.textContent = wCash;
+
+  const barGlobal = document.getElementById('alloc-bar-global');
+  const barGpw = document.getElementById('alloc-bar-gpw');
+  const barBonds = document.getElementById('alloc-bar-bonds');
+  const barCash = document.getElementById('alloc-bar-cash');
+
+  if (barGlobal) barGlobal.style.width = `${wGlobal}%`;
+  if (barGpw) barGpw.style.width = `${wGpw}%`;
+  if (barBonds) barBonds.style.width = `${wBonds}%`;
+  if (barCash) barCash.style.width = `${wCash}%`;
+
+  // 3. Render 4 Core Instrument Cards
+  const instrumentsGrid = document.getElementById('alloc-instruments-grid');
+  if (instrumentsGrid && rec.buckets) {
+    instrumentsGrid.innerHTML = rec.buckets.map(bucket => {
+      const inst = bucket.instrument || {};
+      const secInst = bucket.secondaryInstrument;
+      return `
+        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition">
+          <div>
+            <div class="flex items-center justify-between gap-1 mb-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono-numbers">${bucket.category}</span>
+              <span class="text-xs font-black font-mono-numbers px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                ${bucket.weightPct}%
+              </span>
+            </div>
+            
+            <h4 class="text-sm font-bold text-white mb-0.5">${inst.name || 'Instrument'}</h4>
+            <div class="flex items-center gap-1.5 mb-2">
+              <span class="text-[11px] font-mono-numbers px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-sky-400 font-bold">
+                ${inst.ticker || '--'}
+              </span>
+              ${inst.eligibleOki ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">Konto OKI</span>' : '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">Poza OKI</span>'}
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed mb-3">
+              ${inst.description || ''}
+            </p>
+
+            ${secInst ? `
+              <div class="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 mb-3">
+                <strong class="text-slate-300">Alternatywa detaliczna:</strong> ${secInst.name} (<span class="text-sky-400 font-mono-numbers">${secInst.ticker}</span>)
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/80 mt-2">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Rekomendacja na dziś:</div>
+            <p class="text-xs text-indigo-300 font-medium leading-relaxed">
+              ${bucket.actionAdvice || 'Kontynuuj regularne zasilanie portfela.'}
+            </p>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 4. Initial calculation with current input amount
+  const inputEl = document.getElementById('calc-amount-input');
+  const initialAmount = inputEl ? parseFloat(inputEl.value) || 1500 : 1500;
+  calculateAndRenderContribution(initialAmount);
+}
+
+/**
+ * Calculate and render monthly contribution split in PLN
+ */
+async function calculateAndRenderContribution(amountPln) {
+  const container = document.getElementById('calc-results-container');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/allocation/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amountPln })
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    renderCalculationResults(data);
+  } catch (err) {
+    console.warn('Fallback to client-side allocation calculation:', err);
+    // Client-side fallback if server endpoint is temporarily unreachable
+    const total = Math.max(0, parseFloat(amountPln) || 0);
+    const weights = state.latest?.conclusions?.portfolio_recommendation?.weights || {
+      globalEquities: 50,
+      polishEquities: 15,
+      treasuryBonds: 30,
+      cashAndGold: 5
+    };
+
+    const fallbackData = {
+      totalAmountPln: total,
+      regime: state.latest?.status || 'STABILNY',
+      split: [
+        {
+          name: 'Globalne Akcje (ETF)',
+          instrumentName: 'Vanguard FTSE All-World (VWCE)',
+          ticker: 'VWCE.DE',
+          percent: weights.globalEquities,
+          amountPln: Math.round((total * (weights.globalEquities / 100)) * 100) / 100,
+          note: 'Kup na rachunku maklerskim / OKI',
+        },
+        {
+          name: 'Polskie Akcje (GPW)',
+          instrumentName: 'Beta ETF WIG20TR / mWIG40TR',
+          ticker: 'ETFBW20TR / ETFBM40TR',
+          percent: weights.polishEquities,
+          amountPln: Math.round((total * (weights.polishEquities / 100)) * 100) / 100,
+          note: 'Kup na GPW w ramach OKI',
+        },
+        {
+          name: 'Obligacje Skarbowe',
+          instrumentName: 'Beta ETF TBSP (giełda) lub TOS/COI (detal)',
+          ticker: 'ETFBSTBSP / TOS / COI',
+          percent: weights.treasuryBonds,
+          amountPln: Math.round((total * (weights.treasuryBonds / 100)) * 100) / 100,
+          note: 'W OKI: TBSP na giełdzie lub TOS/COI w podlimicie 25k',
+        },
+        {
+          name: 'Płynna Gotówka / Złoto',
+          instrumentName: 'Konto Oszczędnościowe BFG / Złoto',
+          ticker: 'Konto / Złoto fizyczne',
+          percent: weights.cashAndGold,
+          amountPln: Math.round((total * (weights.cashAndGold / 100)) * 100) / 100,
+          note: 'Zasil konto oszczędnościowe lub zachowaj bufor',
+        }
+      ],
+      okiAdvice: 'Mając 41 lat, w OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe 75 tys. zł podziel na ETF All-World oraz ETF na polskie obligacje skarbowe TBSP na giełdzie.'
+    };
+    renderCalculationResults(fallbackData);
+  }
+}
+
+/**
+ * Render the calculation result cards/table
+ */
+function renderCalculationResults(data) {
+  const container = document.getElementById('calc-results-container');
+  if (!container || !data || !data.split) return;
+
+  const total = (data.totalAmountPln || 0).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  container.innerHTML = `
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-3">
+      <div class="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+        <span class="text-slate-400">Podział miesięcznej kwoty: <strong class="text-white font-mono-numbers text-sm">${total} PLN</strong></span>
+        <span class="text-[11px] font-mono-numbers px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+          Reżim: ${data.regime || 'STABILNY'}
+        </span>
+      </div>
+
+      <div class="divide-y divide-slate-800/60 space-y-2">
+        ${data.split.map(item => `
+          <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-white">${item.name}</span>
+                <span class="text-[10px] font-mono-numbers text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">${item.ticker}</span>
+              </div>
+              <p class="text-[11px] text-slate-400">${item.instrumentName} • <span class="text-slate-500">${item.note}</span></p>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-sm font-black font-mono-numbers text-emerald-400">
+                ${(item.amountPln || 0).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PLN
+              </div>
+              <div class="text-[10px] font-mono-numbers text-slate-400">${item.percent}% wpłaty</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${data.okiAdvice ? `
+        <div class="pt-2.5 mt-1 border-t border-slate-800/80 text-[11px] text-indigo-200/90 flex items-start gap-1.5">
+          <span class="text-indigo-400 shrink-0">📌</span>
+          <span class="leading-relaxed">${data.okiAdvice}</span>
+        </div>
+      ` : ''}
+    </div>
+  `;
 }
 
 /**
@@ -995,6 +1231,33 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(() => {});
   }
+
+  // OKI Calculator events
+  const calcBtn = document.getElementById('btn-calc-split');
+  const calcInput = document.getElementById('calc-amount-input');
+  if (calcBtn && calcInput) {
+    calcBtn.addEventListener('click', () => {
+      const amount = parseFloat(calcInput.value) || 0;
+      calculateAndRenderContribution(amount);
+    });
+
+    calcInput.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') {
+        const amount = parseFloat(calcInput.value) || 0;
+        calculateAndRenderContribution(amount);
+      }
+    });
+  }
+
+  // Calculator presets
+  const presetBtns = document.querySelectorAll('.btn-preset-amount');
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const amount = parseFloat(btn.dataset.amount) || 1500;
+      if (calcInput) calcInput.value = amount;
+      calculateAndRenderContribution(amount);
+    });
+  });
 
   // Load data immediately
   loadDashboard();
