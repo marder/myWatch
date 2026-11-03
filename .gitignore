@@ -1,0 +1,85 @@
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+package-lock.json.bak
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Task specification
+PROMPT.md
+
+# ==========================================
+# SQLite Database & Backups
+# ==========================================
+# Ignore local database instances and WAL/journal files
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.db-journal
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+macro_radar_backup_*.db
+backup_*.db
+
+# Keep the data directory in version control
+!data/.gitkeep
+
+# ==========================================
+# Logs & Process Monitoring
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================
+# Operating System Files
+# ==========================================
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ==========================================
+# IDE & Code Editors
+# ==========================================
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+
+# ==========================================
+# Temporary & Cache Files
+# ==========================================
+tmp/
+temp/
+.cache/

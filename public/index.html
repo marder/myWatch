@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="pl" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poland Macro Crisis Radar | Radar Ryzyka Makroekonomicznego i Giełdowego</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              500: '#0284c7',
+              600: '#0369a1',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-mono-numbers {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-sky-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20 ring-1 ring-white/20">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Radar Makroekonomiczny Polski & GPW
+            <span class="hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Live</span>
+          </h1>
+          <p class="text-xs text-slate-400">Poland Macro Crisis Radar • NBP, Rynek Skarbowy i GPW</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <!-- Date Badge -->
+        <div class="hidden sm:flex items-center text-xs bg-slate-800/80 border border-slate-700/60 px-3 py-1.5 rounded-lg text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
+          <span>Sesja: <strong id="header-date" class="font-mono-numbers text-white ml-1">Wczytywanie...</strong></span>
+        </div>
+
+        <!-- Admin / Database Button -->
+        <button id="admin-modal-btn" class="flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+          <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16M8 4v4m8-4v4" />
+          </svg>
+          <span id="admin-btn-label">Baza & Backup</span>
+        </button>
+
+        <!-- Refresh Button -->
+        <button id="refresh-btn" class="flex items-center space-x-2 text-xs font-semibold px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-900/30 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg id="refresh-icon" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span id="refresh-label">Odśwież dane</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-slate-700 text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+    <div id="toast-icon"></div>
+    <div id="toast-text" class="text-slate-200"></div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- ADMIN & DATABASE BACKUP MODAL              -->
+  <!-- ========================================== -->
+  <div id="admin-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Panel Administracyjny Bazy Danych</h3>
+            <p class="text-[11px] text-slate-400">Pobieranie bazy na dysk, backup e-mail i głęboki backfill</p>
+          </div>
+        </div>
+        <button id="close-modal-btn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Content: LOGIN VIEW -->
+      <div id="admin-login-view" class="p-6 space-y-4">
+        <div class="bg-slate-950/60 border border-slate-800 p-3.5 rounded-xl text-xs text-slate-300">
+          <p>Dostęp do zarządzania bazą danych (pobieranie pliku <code>.db</code>, wysyłka e-mail, rozszerzony backfill) wymaga logowania administratora.</p>
+        </div>
+
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Login:</label>
+            <input type="text" id="login-user" placeholder="Wpisz login" required autocomplete="username" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-sky-500 font-mono-numbers">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Hasło:</label>
+            <input type="password" id="login-pass" placeholder="Wpisz hasło" required autocomplete="current-password" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-sky-500 font-mono-numbers">
+          </div>
+          <div id="login-error" class="text-xs text-rose-400 hidden"></div>
+          <button type="submit" class="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-lg transition shadow-md shadow-sky-900/30">
+            Zaloguj się do bazy danych
+          </button>
+        </form>
+      </div>
+
+      <!-- Modal Content: ADMIN LOGGED-IN VIEW -->
+      <div id="admin-dashboard-view" class="p-6 space-y-5 hidden">
+        
+        <!-- Status & Stats Bar -->
+        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-300">Stan Bazy SQLite (WAL Mode):</span>
+            <span class="text-[11px] font-mono-numbers text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Aktywna</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
+              <span class="text-slate-400 block text-[10px]">Wpisy:</span>
+              <strong id="admin-stat-count" class="font-mono-numbers text-white">--</strong>
+            </div>
+            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
+              <span class="text-slate-400 block text-[10px]">Rozmiar:</span>
+              <strong id="admin-stat-size" class="font-mono-numbers text-white">-- KB</strong>
+            </div>
+            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
+              <span class="text-slate-400 block text-[10px]">Zakres:</span>
+              <strong id="admin-stat-range" class="font-mono-numbers text-white text-[10px]">--</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action 1: Download Database File -->
+        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <h4 class="text-xs font-bold text-slate-200">Pobierz plik bazy danych na dysk</h4>
+            <p class="text-[11px] text-slate-400">Eksportuje plik <code>macro_radar.db</code> ze zrzutem WAL.</p>
+          </div>
+          <button id="btn-download-db" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md shadow-emerald-900/30 flex items-center justify-center gap-2 transition">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>Pobierz .db</span>
+          </button>
+        </div>
+
+        <!-- Action 2: Email Backup -->
+        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-200">Wyślij kopię bazy danych na e-mail</h4>
+            <span id="smtp-status-badge" class="text-[10px] px-2 py-0.5 rounded border text-slate-400 border-slate-700">Weryfikacja SMTP...</span>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="email" id="email-backup-input" placeholder="Wpisz adres e-mail (np. twoj@email.pl)" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 font-mono-numbers">
+            <button id="btn-send-email-backup" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span>Wyślij backup</span>
+            </button>
+          </div>
+          <p class="text-[10px] text-slate-500">Cykliczny harmonogram e-mail w tle: w każdą niedzielę o 03:00 (konfigurowalny w config.js).</p>
+        </div>
+
+        <!-- Action 3: Deep Backfill -->
+        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
+          <div>
+            <h4 class="text-xs font-bold text-slate-200">Pobierz dłuższą historię danych (Głęboki Backfill)</h4>
+            <p class="text-[11px] text-slate-400">Możesz zasilić bazę większą liczbą sesji niż domyślne 60.</p>
+          </div>
+          <div class="flex flex-col sm:flex-row items-center gap-2">
+            <select id="backfill-days-select" class="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+              <option value="60">60 sesji (ok. 3 miesiące)</option>
+              <option value="120">120 sesji (ok. pół roku)</option>
+              <option value="250">250 sesji (pełny rok giełdowy)</option>
+            </select>
+            <button id="btn-run-backfill" class="w-full sm:w-auto flex-1 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Uruchom i przelicz historię</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Logout button -->
+        <div class="pt-2 flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/60">
+          <span>Zalogowano jako: <strong id="admin-username-label" class="text-slate-300">admin</strong></span>
+          <button id="btn-logout" class="text-rose-400 hover:text-rose-300 font-semibold transition">
+            Wyloguj się
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 flex-1 w-full">
+
+    <!-- ========================================== -->
+    <!-- SEKCJA DLA KAŻDEGO (PROSTYM JĘZYKIEM)       -->
+    <!-- ========================================== -->
+    <section class="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/40 border border-sky-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div class="absolute -top-24 -right-24 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              Co to oznacza dla Twojego portfela w prostych słowach?
+              <span class="text-[11px] font-medium text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">Dla każdego</span>
+            </h2>
+            <p class="text-xs text-slate-400">Praktyczny przewodnik bez bankowego żargonu</p>
+          </div>
+        </div>
+
+        <!-- Traffic Light Badge -->
+        <div id="plain-badge" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm">
+          Wczytywanie...
+        </div>
+      </div>
+
+      <!-- Plain Headline -->
+      <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 mb-5">
+        <p id="plain-headline" class="text-sm sm:text-base font-medium text-slate-100 leading-relaxed">
+          Wczytywanie prostej diagnozy portfelowej...
+        </p>
+      </div>
+
+      <!-- 4 Practical Advice Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- 1. Savings & Deposits -->
+        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-4 hover:border-slate-700 transition">
+          <div class="flex items-center space-x-2 text-indigo-400 font-bold text-xs uppercase tracking-wider mb-2">
+            <span class="text-base">🏦</span>
+            <span>Oszczędności i Lokaty</span>
+          </div>
+          <p id="plain-savings" class="text-xs text-slate-300 leading-relaxed">
+            --
+          </p>
+        </div>
+
+        <!-- 2. Loans & Installments -->
+        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-4 hover:border-slate-700 transition">
+          <div class="flex items-center space-x-2 text-amber-400 font-bold text-xs uppercase tracking-wider mb-2">
+            <span class="text-base">🏠</span>
+            <span>Kredyty i Raty</span>
+          </div>
+          <p id="plain-loans" class="text-xs text-slate-300 leading-relaxed">
+            --
+          </p>
+        </div>
+
+        <!-- 3. Investing / IKE / IKZE -->
+        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-4 hover:border-slate-700 transition">
+          <div class="flex items-center space-x-2 text-emerald-400 font-bold text-xs uppercase tracking-wider mb-2">
+            <span class="text-base">📈</span>
+            <span>Inwestycje (IKE/IKZE)</span>
+          </div>
+          <p id="plain-investing" class="text-xs text-slate-300 leading-relaxed">
+            --
+          </p>
+        </div>
+
+        <!-- 4. Currencies & Travel -->
+        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-4 hover:border-slate-700 transition">
+          <div class="flex items-center space-x-2 text-sky-400 font-bold text-xs uppercase tracking-wider mb-2">
+            <span class="text-base">💱</span>
+            <span>Waluty i Wyjazdy</span>
+          </div>
+          <p id="plain-currencies" class="text-xs text-slate-300 leading-relaxed">
+            --
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Quick Glossary Accordion / Toggle -->
+      <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+        <details class="cursor-pointer text-xs w-full">
+          <summary class="hover:text-slate-200 transition font-medium flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+            Szybki słowniczek: Czym jest inwersja krzywej, spread kredytowy i średnia SMA200? (Kliknij, aby rozwinąć)
+          </summary>
+          <div id="plain-glossary" class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-800/60 text-slate-300">
+            <!-- Rendered by app.js -->
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- NOTOWANIA NAJWAŻNIEJSZYCH INDEKSÓW GPW     -->
+    <!-- ========================================== -->
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Kluczowe Notowania i Indeksy GPW</h2>
+        </div>
+        <span class="text-xs text-slate-400 font-mono-numbers">Giełda Papierów Wartościowych w Warszawie</span>
+      </div>
+
+      <div id="gpw-indices-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <!-- Rendered by app.js (WIG, WIG20, mWIG40, sWIG80, WIG-Banki) -->
+      </div>
+    </section>
+
+    <!-- HERO SECTION: 2-Column Grid (Scoring & Diagnostic Engine) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT: Risk Gauge & Pillars Breakdown (5 cols) -->
+      <section class="lg:col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400">Zbiorczy Indeks Ryzyka</h2>
+            <span id="status-pill" class="text-xs font-bold px-2.5 py-1 rounded-full border">
+              Wczytywanie...
+            </span>
+          </div>
+
+          <!-- Numerical Gauge -->
+          <div class="flex items-baseline space-x-2 my-2">
+            <span id="risk-score-value" class="text-6xl font-black font-mono-numbers tracking-tight text-white">--</span>
+            <span class="text-xl font-semibold text-slate-500">/ 100</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-6">Wskaźnik presji makroekonomicznej (0 = stabilność, 100 = skrajny kryzys systemowy)</p>
+
+          <!-- 4 Pillars Breakdown -->
+          <div class="space-y-3.5">
+            <!-- Pillar 1 -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">1. Krzywa dochodowości (PL10Y - PL2Y)</span>
+                <span class="font-mono-numbers text-slate-400"><strong id="p1-pts" class="text-white">0</strong>/30 pkt</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="p1-bar" class="bg-indigo-500 h-2 rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Pillar 2 -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">2. Spread kredytowy PL vs DE (Bund)</span>
+                <span class="font-mono-numbers text-slate-400"><strong id="p2-pts" class="text-white">0</strong>/25 pkt</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="p2-bar" class="bg-sky-500 h-2 rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Pillar 3 -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">3. Presja walutowa FX (USD / EUR 30d)</span>
+                <span class="font-mono-numbers text-slate-400"><strong id="p3-pts" class="text-white">0</strong>/25 pkt</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="p3-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Pillar 4 -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">4. Trend giełdowy (WIG vs SMA200)</span>
+                <span class="font-mono-numbers text-slate-400"><strong id="p4-pts" class="text-white">0</strong>/20 pkt</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="p4-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-5 mt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Model: 4-Filarowy Risk Matrix</span>
+          <span id="update-timestamp" class="font-mono-numbers">--</span>
+        </div>
+      </section>
+
+      <!-- RIGHT: Conclusions & Tactical Stance (7 cols) -->
+      <section class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm flex flex-col justify-between">
+        <div>
+          <!-- Header with Tactical Stance Badge -->
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400">Diagnoza dla Inwestorów (TFI / GPW)</h2>
+            <span id="tactical-stance-badge" class="text-xs font-bold px-3 py-1 rounded-lg bg-sky-500/10 text-sky-300 border border-sky-500/30">
+              Wczytywanie...
+            </span>
+          </div>
+
+          <!-- Macro Summary -->
+          <p id="macro-summary" class="text-sm text-slate-200 leading-relaxed font-normal mb-5 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800">
+            Wczytywanie bieżących wniosków analitycznych...
+          </p>
+
+          <!-- 2 Distinct Callout Boxes -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- Box 1: Bonds / TFI -->
+            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-4 flex flex-col">
+              <div class="flex items-center space-x-2 text-indigo-400 mb-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="text-xs font-bold uppercase tracking-wider">Fundusze Dłużne i Obligacje (TFI)</h3>
+              </div>
+              <p id="bonds-tfi-view" class="text-xs text-slate-300 leading-relaxed flex-1">
+                --
+              </p>
+            </div>
+
+            <!-- Box 2: Equities GPW -->
+            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-4 flex flex-col">
+              <div class="flex items-center space-x-2 text-emerald-400 mb-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+                <h3 class="text-xs font-bold uppercase tracking-wider">Akcje GPW (WIG / Dywidendy)</h3>
+              </div>
+              <p id="equities-gpw-view" class="text-xs text-slate-300 leading-relaxed flex-1">
+                --
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Warnings List Container -->
+        <div class="mt-4 pt-4 border-t border-slate-800/80">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Sygnały i Ostrzeżenia Rynkowe
+          </div>
+          <div id="warnings-container" class="space-y-1.5 text-xs">
+            <!-- Rendered by app.js -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TOP NEWSY GOSPODARCZE (PULS RYNKU)         -->
+    <!-- ========================================== -->
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></div>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Puls Rynku — Najważniejsze Wiadomości Gospodarcze</h2>
+        </div>
+        <div class="text-xs text-slate-400 flex items-center space-x-2">
+          <span>Źródło: Bankier.pl / PAP / TVN24</span>
+          <span>•</span>
+          <span class="text-sky-400 font-medium">Kliknij artykuł, aby przejść do źródła ↗</span>
+        </div>
+      </div>
+
+      <!-- News Grid -->
+      <div id="news-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full py-6 text-center text-slate-500 text-xs">
+          Wczytywanie najświeższych wiadomości gospodarczych...
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI METRIC CARDS (4 Columns) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- KPI 1: Yield Curve Spread -->
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Nachylenie Krzywej (10Y - 2Y)</div>
+        <div class="flex items-baseline space-x-1.5 mb-1">
+          <span id="kpi-curve-val" class="text-2xl font-bold font-mono-numbers text-white">--</span>
+          <span class="text-xs text-slate-400">pp.</span>
+        </div>
+        <div id="kpi-curve-sub" class="text-xs text-slate-400 font-mono-numbers">
+          PL10Y: -- | PL2Y: --
+        </div>
+      </div>
+
+      <!-- KPI 2: Sovereign Spread -->
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Spread Kredytowy PL - DE</div>
+        <div class="flex items-baseline space-x-1.5 mb-1">
+          <span id="kpi-spread-val" class="text-2xl font-bold font-mono-numbers text-white">--</span>
+          <span class="text-xs text-slate-400">bps</span>
+        </div>
+        <div id="kpi-spread-sub" class="text-xs text-slate-400 font-mono-numbers">
+          Bund 10Y: --
+        </div>
+      </div>
+
+      <!-- KPI 3: FX Pressure -->
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Presja Walutowa (NBP)</div>
+        <div class="flex items-baseline space-x-2 mb-1">
+          <span id="kpi-usd-val" class="text-2xl font-bold font-mono-numbers text-white">--</span>
+          <span id="kpi-usd-chg" class="text-xs px-1.5 py-0.5 rounded font-mono-numbers bg-slate-800 text-slate-300">--</span>
+        </div>
+        <div id="kpi-eur-sub" class="text-xs text-slate-400 font-mono-numbers">
+          EUR: --
+        </div>
+      </div>
+
+      <!-- KPI 4: Equity Trend WIG -->
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Trend Giełdowy (WIG)</div>
+        <div class="flex items-baseline space-x-1.5 mb-1">
+          <span id="kpi-wig-val" class="text-2xl font-bold font-mono-numbers text-white">--</span>
+          <span class="text-xs text-slate-400">pkt</span>
+        </div>
+        <div id="kpi-wig-sub" class="text-xs text-slate-400 font-mono-numbers">
+          SMA200: --
+        </div>
+      </div>
+
+    </div>
+
+    <!-- INTERACTIVE CHARTS (2x2 Grid) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Chart 1: Risk Index History -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            Historia Indeksu Ryzyka (0 - 100 pkt)
+          </h3>
+          <span class="text-[10px] text-slate-400 font-mono-numbers">Ostatnie sesje</span>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="chart-risk"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Yield Curve Slope -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+            Nachylenie Krzywej Dochodowości (PL10Y - PL2Y)
+          </h3>
+          <span class="text-[10px] text-slate-400 font-mono-numbers">Próg inwersji: 0.00 pp.</span>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="chart-curve"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Currency Rates USD / EUR -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            Kursy NBP: USD/PLN i EUR/PLN
+          </h3>
+          <span class="text-[10px] text-slate-400 font-mono-numbers">Oficjalna tabela A NBP</span>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="chart-fx"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 4: WIG vs SMA200 -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            Indeks WIG na tle średniej SMA200
+          </h3>
+          <span class="text-[10px] text-slate-400 font-mono-numbers">Reżim techniczny</span>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="chart-wig"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- HISTORICAL READINGS TABLE -->
+    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-200">Rejestr Ostatnich 10 Sesji Giełdowych</h3>
+          <p class="text-xs text-slate-400">Szczegółowe parametry składowe modelu kryzysowego</p>
+        </div>
+        <span class="text-[11px] font-mono-numbers text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded">
+          SQLite Time-Series
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/60 border-b border-slate-800">
+            <tr>
+              <th class="py-3 px-3">Data</th>
+              <th class="py-3 px-3">Indeks Ryzyka</th>
+              <th class="py-3 px-3">Status</th>
+              <th class="py-3 px-3">PL10Y - PL2Y</th>
+              <th class="py-3 px-3">Spread PL-DE</th>
+              <th class="py-3 px-3">USD/PLN</th>
+              <th class="py-3 px-3">EUR/PLN</th>
+              <th class="py-3 px-3">WIG</th>
+              <th class="py-3 px-3">vs SMA200</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body" class="divide-y divide-slate-800/60 font-mono-numbers">
+            <tr>
+              <td colspan="9" class="py-6 text-center text-slate-500">Wczytywanie historii sesji...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>Poland Macro Crisis Radar • Narzędzie analityczne dla inwestorów GPW i funduszy TFI</div>
+      <div class="flex items-center space-x-4">
+        <span>Dane: NBP, Stooq, Bankier.pl</span>
+        <span>•</span>
+        <span id="footer-uptime">Uptime: --</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Frontend Logic -->
+  <script src="/app.js"></script>
+</body>
+</html>

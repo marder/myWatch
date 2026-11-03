@@ -1,0 +1,30 @@
+{
+  "name": "poland-macro-crisis-radar",
+  "version": "1.0.0",
+  "description": "Poland Macro Crisis Radar — Fullstack Financial Analytics Web Application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "poland",
+    "macroeconomics",
+    "gpw",
+    "nbp",
+    "stooq",
+    "crisis-radar",
+    "finance"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^10.3.1"
+  },
+  "allowScripts": {
+    "better-sqlite3@11.8.1": true
+  }
+}
