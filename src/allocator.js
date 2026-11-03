@@ -143,7 +143,7 @@ function getTargetAllocationWeights(riskScore) {
     };
   }
 
-  // Reżim Stabilny (Domyślny dla 41-latka nastawionego na obniżone ryzyko)
+  // Reżim Stabilny (Domyślny dla inwestora nastawionego na obniżone ryzyko)
   return {
     regime: 'STABILNY',
     strategyStance: 'Planowy Wzrost & Regularne DCA',
@@ -216,7 +216,7 @@ function getFullPortfolioRecommendation(riskScore, latestReading = {}) {
       'Brak zamrożenia środków – zyski można wypłacić w dowolnej chwili bez utraty ulgi podatkowej.',
       'Od nadwyżki ponad 100 000 zł naliczany jest nowy podatek od wartości aktywów.',
     ],
-    tacticalTipFor41Yo: 'Mając 41 lat, w OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe 75 tys. zł podziel na ETF All-World (ok. 50-60 tys. zł) oraz ETF na polskie obligacje skarbowe TBSP na giełdzie (15-25 tys. zł). W ten sposób w 100% wykorzystasz ulgę bez podatku Belki przy minimalnym ryzyku!'
+    tacticalTip: 'W koncie OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe 75 tys. zł podziel na ETF All-World (ok. 50-60 tys. zł) oraz ETF na polskie obligacje skarbowe TBSP na giełdzie (15-25 tys. zł). W ten sposób w 100% wykorzystasz ulgę bez podatku Belki przy minimalnym ryzyku!'
   };
 
   return {
@@ -279,7 +279,7 @@ function calculateContributionSplit(amountPln, riskScore, latestReading = {}) {
     regime: recommendation.regime,
     strategyStance: recommendation.strategyStance,
     split,
-    okiAdvice: recommendation.okiGuidance.tacticalTipFor41Yo,
+    okiAdvice: recommendation.okiGuidance.tacticalTip,
   };
 }
 

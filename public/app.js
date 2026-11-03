@@ -543,7 +543,7 @@ async function calculateAndRenderContribution(amountPln) {
           note: 'Zasil konto oszczędnościowe lub zachowaj bufor',
         }
       ],
-      okiAdvice: 'Mając 41 lat, w OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe 75 tys. zł podziel na ETF All-World oraz ETF na polskie obligacje skarbowe TBSP na giełdzie.'
+      okiAdvice: 'W koncie OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe 75 tys. zł podziel na ETF All-World oraz ETF na polskie obligacje skarbowe TBSP na giełdzie.'
     };
     renderCalculationResults(fallbackData);
   }
