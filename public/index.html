@@ -37,6 +37,14 @@
       font-family: 'JetBrains Mono', monospace;
     }
     /* Custom scrollbar */
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
+    }
+    * {
+      box-sizing: border-box;
+    }
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -53,47 +61,51 @@
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white overflow-x-hidden w-full">
 
   <!-- Top Navigation Bar -->
   <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-sky-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20 ring-1 ring-white/20">
-          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 min-w-0">
+      <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-gradient-to-tr from-sky-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20 ring-1 ring-white/20">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
         </div>
-        <div>
-          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            Radar Makroekonomiczny Polski & GPW
+        <div class="min-w-0">
+          <h1 class="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <span class="sm:hidden truncate">Radar Makro PL</span>
+            <span class="hidden sm:inline">Radar Makroekonomiczny Polski & GPW</span>
             <span class="hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Live</span>
           </h1>
-          <p class="text-xs text-slate-400">Poland Macro Crisis Radar • NBP, Rynek Skarbowy i GPW</p>
+          <p class="text-[10px] sm:text-xs text-slate-400 truncate sm:block">
+            <span class="sm:hidden">NBP • Rynek Skarbowy • GPW</span>
+            <span class="hidden sm:inline">Poland Macro Crisis Radar • NBP, Rynek Skarbowy i GPW</span>
+          </p>
         </div>
       </div>
 
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
         <!-- Date Badge -->
-        <div class="hidden sm:flex items-center text-xs bg-slate-800/80 border border-slate-700/60 px-3 py-1.5 rounded-lg text-slate-300">
+        <div class="hidden lg:flex items-center text-xs bg-slate-800/80 border border-slate-700/60 px-3 py-1.5 rounded-lg text-slate-300">
           <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
           <span>Sesja: <strong id="header-date" class="font-mono-numbers text-white ml-1">Wczytywanie...</strong></span>
         </div>
 
         <!-- Admin / Database Button -->
-        <button id="admin-modal-btn" class="flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
-          <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button id="admin-modal-btn" title="Panel Bazy Danych i Backup" aria-label="Panel Bazy Danych i Backup" class="flex items-center justify-center space-x-1.5 text-xs font-semibold p-2 sm:px-3 sm:py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+          <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16M8 4v4m8-4v4" />
           </svg>
-          <span id="admin-btn-label">Baza & Backup</span>
+          <span id="admin-btn-label" class="hidden sm:inline">Baza & Backup</span>
         </button>
 
         <!-- Refresh Button -->
-        <button id="refresh-btn" class="flex items-center space-x-2 text-xs font-semibold px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-900/30 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-          <svg id="refresh-icon" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button id="refresh-btn" title="Odśwież dane z rynku" aria-label="Odśwież dane z rynku" class="flex items-center justify-center space-x-1.5 text-xs font-semibold p-2 sm:px-3.5 sm:py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-900/30 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg id="refresh-icon" class="w-4 h-4 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span id="refresh-label">Odśwież dane</span>
+          <span id="refresh-label" class="hidden sm:inline">Odśwież dane</span>
         </button>
       </div>
     </div>
@@ -214,13 +226,13 @@
         <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
           <div>
             <h4 class="text-xs font-bold text-slate-200">Pobierz dłuższą historię danych (Głęboki Backfill)</h4>
-            <p class="text-[11px] text-slate-400">Możesz zasilić bazę większą liczbą sesji niż domyślne 60.</p>
+            <p class="text-[11px] text-slate-400">Możesz zasilić bazę większą liczbą sesji historycznych.</p>
           </div>
           <div class="flex flex-col sm:flex-row items-center gap-2">
             <select id="backfill-days-select" class="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
-              <option value="60">60 sesji (ok. 3 miesiące)</option>
+              <option value="250" selected>250 sesji (pełny rok giełdowy - domyślny)</option>
               <option value="120">120 sesji (ok. pół roku)</option>
-              <option value="250">250 sesji (pełny rok giełdowy)</option>
+              <option value="60">60 sesji (ok. 3 miesiące)</option>
             </select>
             <button id="btn-run-backfill" class="w-full sm:w-auto flex-1 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -244,48 +256,48 @@
     </div>
   </div>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 flex-1 w-full">
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-8 flex-1 w-full min-w-0">
 
     <!-- ========================================== -->
     <!-- SEKCJA DLA KAŻDEGO (PROSTYM JĘZYKIEM)       -->
     <!-- ========================================== -->
-    <section class="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/40 border border-sky-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+    <section class="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/40 border border-sky-500/30 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
       <div class="absolute -top-24 -right-24 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
+        <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30 shrink-0">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <div>
-            <h2 class="text-sm font-bold text-white flex items-center gap-2">
-              Co to oznacza dla Twojego portfela w prostych słowach?
-              <span class="text-[11px] font-medium text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">Dla każdego</span>
+          <div class="min-w-0">
+            <h2 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 sm:gap-2 truncate">
+              <span class="truncate">Co to oznacza dla Twojego portfela w prostych słowach?</span>
+              <span class="text-[10px] sm:text-[11px] font-medium text-sky-400 bg-sky-500/10 px-1.5 sm:px-2 py-0.5 rounded border border-sky-500/20 shrink-0">Dla każdego</span>
             </h2>
-            <p class="text-xs text-slate-400">Praktyczny przewodnik bez bankowego żargonu</p>
+            <p class="text-[11px] sm:text-xs text-slate-400">Praktyczny przewodnik bez bankowego żargonu</p>
           </div>
         </div>
 
         <!-- Traffic Light Badge -->
-        <div id="plain-badge" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm">
+        <div id="plain-badge" class="px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm">
           Wczytywanie...
         </div>
       </div>
 
       <!-- Plain Headline -->
-      <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 mb-5">
-        <p id="plain-headline" class="text-sm sm:text-base font-medium text-slate-100 leading-relaxed">
+      <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 sm:p-4 mb-4 sm:mb-5">
+        <p id="plain-headline" class="text-xs sm:text-base font-medium text-slate-100 leading-relaxed">
           Wczytywanie prostej diagnozy portfelowej...
         </p>
       </div>
 
       <!-- 4 Practical Advice Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
         <!-- 1. Savings & Deposits -->
-        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-4 hover:border-slate-700 transition">
+        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-3.5 sm:p-4 hover:border-slate-700 transition">
           <div class="flex items-center space-x-2 text-indigo-400 font-bold text-xs uppercase tracking-wider mb-2">
             <span class="text-base">🏦</span>
             <span>Oszczędności i Lokaty</span>
@@ -296,7 +308,7 @@
         </div>
 
         <!-- 2. Loans & Installments -->
-        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-4 hover:border-slate-700 transition">
+        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-3.5 sm:p-4 hover:border-slate-700 transition">
           <div class="flex items-center space-x-2 text-amber-400 font-bold text-xs uppercase tracking-wider mb-2">
             <span class="text-base">🏠</span>
             <span>Kredyty i Raty</span>
@@ -307,7 +319,7 @@
         </div>
 
         <!-- 3. Investing / IKE / IKZE -->
-        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-4 hover:border-slate-700 transition">
+        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-3.5 sm:p-4 hover:border-slate-700 transition">
           <div class="flex items-center space-x-2 text-emerald-400 font-bold text-xs uppercase tracking-wider mb-2">
             <span class="text-base">📈</span>
             <span>Inwestycje (IKE/IKZE)</span>
@@ -318,7 +330,7 @@
         </div>
 
         <!-- 4. Currencies & Travel -->
-        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-4 hover:border-slate-700 transition">
+        <div class="bg-slate-950/50 border border-slate-800/90 rounded-xl p-3.5 sm:p-4 hover:border-slate-700 transition">
           <div class="flex items-center space-x-2 text-sky-400 font-bold text-xs uppercase tracking-wider mb-2">
             <span class="text-base">💱</span>
             <span>Waluty i Wyjazdy</span>
@@ -334,7 +346,7 @@
       <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
         <details class="cursor-pointer text-xs w-full">
           <summary class="hover:text-slate-200 transition font-medium flex items-center gap-1">
-            <svg class="w-3.5 h-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
             Szybki słowniczek: Czym jest inwersja krzywej, spread kredytowy i średnia SMA200? (Kliknij, aby rozwinąć)
@@ -349,25 +361,25 @@
     <!-- ========================================== -->
     <!-- NOTOWANIA NAJWAŻNIEJSZYCH INDEKSÓW GPW     -->
     <!-- ========================================== -->
-    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
-      <div class="flex items-center justify-between mb-4">
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3 sm:mb-4">
         <div class="flex items-center space-x-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Kluczowe Notowania i Indeksy GPW</h2>
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+          <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Kluczowe Notowania i Indeksy GPW</h2>
         </div>
-        <span class="text-xs text-slate-400 font-mono-numbers">Giełda Papierów Wartościowych w Warszawie</span>
+        <span class="text-[11px] sm:text-xs text-slate-400 font-mono-numbers">Giełda Papierów Wartościowych w Warszawie</span>
       </div>
 
-      <div id="gpw-indices-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      <div id="gpw-indices-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
         <!-- Rendered by app.js (WIG, WIG20, mWIG40, sWIG80, WIG-Banki) -->
       </div>
     </section>
 
     <!-- HERO SECTION: 2-Column Grid (Scoring & Diagnostic Engine) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
 
       <!-- LEFT: Risk Gauge & Pillars Breakdown (5 cols) -->
-      <section class="lg:col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm flex flex-col justify-between">
+      <section class="lg:col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl backdrop-blur-sm flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400">Zbiorczy Indeks Ryzyka</h2>
@@ -378,10 +390,10 @@
 
           <!-- Numerical Gauge -->
           <div class="flex items-baseline space-x-2 my-2">
-            <span id="risk-score-value" class="text-6xl font-black font-mono-numbers tracking-tight text-white">--</span>
-            <span class="text-xl font-semibold text-slate-500">/ 100</span>
+            <span id="risk-score-value" class="text-4xl sm:text-6xl font-black font-mono-numbers tracking-tight text-white">--</span>
+            <span class="text-base sm:text-xl font-semibold text-slate-500">/ 100</span>
           </div>
-          <p class="text-xs text-slate-400 mb-6">Wskaźnik presji makroekonomicznej (0 = stabilność, 100 = skrajny kryzys systemowy)</p>
+          <p class="text-xs text-slate-400 mb-5 sm:mb-6">Wskaźnik presji makroekonomicznej (0 = stabilność, 100 = skrajny kryzys systemowy)</p>
 
           <!-- 4 Pillars Breakdown -->
           <div class="space-y-3.5">
@@ -431,14 +443,14 @@
           </div>
         </div>
 
-        <div class="pt-5 mt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+        <div class="pt-4 sm:pt-5 mt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
           <span>Model: 4-Filarowy Risk Matrix</span>
           <span id="update-timestamp" class="font-mono-numbers">--</span>
         </div>
       </section>
 
       <!-- RIGHT: Conclusions & Tactical Stance (7 cols) -->
-      <section class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm flex flex-col justify-between">
+      <section class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl backdrop-blur-sm flex flex-col justify-between">
         <div>
           <!-- Header with Tactical Stance Badge -->
           <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -449,15 +461,15 @@
           </div>
 
           <!-- Macro Summary -->
-          <p id="macro-summary" class="text-sm text-slate-200 leading-relaxed font-normal mb-5 bg-slate-950/50 p-3.5 rounded-xl border border-slate-800">
+          <p id="macro-summary" class="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal mb-4 sm:mb-5 bg-slate-950/50 p-3 sm:p-3.5 rounded-xl border border-slate-800">
             Wczytywanie bieżących wniosków analitycznych...
           </p>
 
           <!-- 2 Distinct Callout Boxes -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             
             <!-- Box 1: Bonds / TFI -->
-            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-4 flex flex-col">
+            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-3.5 sm:p-4 flex flex-col">
               <div class="flex items-center space-x-2 text-indigo-400 mb-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -470,7 +482,7 @@
             </div>
 
             <!-- Box 2: Equities GPW -->
-            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-4 flex flex-col">
+            <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-3.5 sm:p-4 flex flex-col">
               <div class="flex items-center space-x-2 text-emerald-400 mb-2">
                 <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
@@ -487,7 +499,7 @@
         <!-- Active Warnings List Container -->
         <div class="mt-4 pt-4 border-t border-slate-800/80">
           <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             Sygnały i Ostrzeżenia Rynkowe
@@ -503,46 +515,46 @@
     <!-- ========================================== -->
     <!-- STRATEGIA INWESTYCYJNA & PORTFEL OKI       -->
     <!-- ========================================== -->
-    <section class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden space-y-6">
+    <section class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden space-y-5 sm:space-y-6">
       <div class="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <!-- Section Header -->
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shadow-inner">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shadow-inner shrink-0">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
             </svg>
           </div>
-          <div>
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              Modelowy Portfel & Strategia OKI na Dziś
-              <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+          <div class="min-w-0">
+            <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-1.5 sm:gap-2 truncate">
+              <span class="truncate">Modelowy Portfel & Strategia OKI na Dziś</span>
+              <span class="text-[9px] sm:text-[10px] uppercase font-bold px-1.5 sm:px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shrink-0">
                 OKI od 2027 r.
               </span>
             </h2>
-            <p class="text-xs text-slate-400">
+            <p class="text-[11px] sm:text-xs text-slate-400">
               Dynamiczny podział aktywów zorientowany na stabilny wzrost, minimalizację ryzyka i limit 100 000 zł bez podatku Belki
             </p>
           </div>
         </div>
 
         <!-- Strategy Stance Badge -->
-        <div id="alloc-stance-badge" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm bg-indigo-500/15 text-indigo-300 border-indigo-500/30">
+        <div id="alloc-stance-badge" class="px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-2 shadow-sm bg-indigo-500/15 text-indigo-300 border-indigo-500/30">
           Wczytywanie strategii...
         </div>
       </div>
 
       <!-- Tactical Macro Allocation Summary -->
-      <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div class="space-y-1">
-          <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Wytyczne taktyczne dla portfela</div>
+          <div class="text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold text-slate-400">Wytyczne taktyczne dla portfela</div>
           <p id="alloc-action-summary" class="text-xs sm:text-sm text-slate-200 font-medium">
             Wczytywanie bieżących wytycznych alokacyjnych...
           </p>
         </div>
-        <div class="shrink-0 flex items-center gap-2 text-xs font-mono-numbers text-slate-400 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+        <div class="shrink-0 flex items-center gap-2 text-xs font-mono-numbers text-slate-400 bg-slate-900/90 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-800">
           <span>Reżim:</span>
           <span id="alloc-regime-label" class="font-bold text-white">--</span>
         </div>
@@ -558,7 +570,7 @@
         </div>
 
         <!-- Multi-colored Segmented Progress Bar -->
-        <div class="h-3.5 rounded-full bg-slate-950 overflow-hidden flex p-0.5 border border-slate-800 shadow-inner mb-4">
+        <div class="h-3 sm:h-3.5 rounded-full bg-slate-950 overflow-hidden flex p-0.5 border border-slate-800 shadow-inner mb-3 sm:mb-4">
           <div id="alloc-bar-global" class="bg-sky-500 h-full rounded-l-full transition-all duration-700" style="width: 50%" title="Globalne Akcje"></div>
           <div id="alloc-bar-gpw" class="bg-emerald-500 h-full transition-all duration-700" style="width: 15%" title="Polskie Akcje GPW"></div>
           <div id="alloc-bar-bonds" class="bg-indigo-500 h-full transition-all duration-700" style="width: 30%" title="Obligacje Skarbowe"></div>
@@ -566,53 +578,53 @@
         </div>
 
         <!-- 4 Allocation Stat Pills -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-slate-950/50 border border-sky-500/30 rounded-xl p-3 flex flex-col justify-between">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          <div class="bg-slate-950/50 border border-sky-500/30 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between">
             <div class="flex items-center space-x-1.5 text-sky-400 text-xs font-medium mb-1">
-              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
-              <span>Globalne Akcje (ETF)</span>
+              <span class="w-2 h-2 rounded-full bg-sky-400 shrink-0"></span>
+              <span class="truncate">Globalne Akcje (ETF)</span>
             </div>
             <div class="flex items-baseline space-x-1">
-              <span id="weight-global-pct" class="text-2xl font-black font-mono-numbers text-white">50</span>
+              <span id="weight-global-pct" class="text-xl sm:text-2xl font-black font-mono-numbers text-white">50</span>
               <span class="text-xs text-slate-400 font-bold">%</span>
             </div>
-            <span class="text-[10px] text-slate-400 mt-1">Szeroki świat (VWCE)</span>
+            <span class="text-[10px] text-slate-400 mt-1 truncate">Szeroki świat (VWCE)</span>
           </div>
 
-          <div class="bg-slate-950/50 border border-emerald-500/30 rounded-xl p-3 flex flex-col justify-between">
+          <div class="bg-slate-950/50 border border-emerald-500/30 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between">
             <div class="flex items-center space-x-1.5 text-emerald-400 text-xs font-medium mb-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span>Polskie Akcje GPW</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+              <span class="truncate">Polskie Akcje GPW</span>
             </div>
             <div class="flex items-baseline space-x-1">
-              <span id="weight-gpw-pct" class="text-2xl font-black font-mono-numbers text-white">15</span>
+              <span id="weight-gpw-pct" class="text-xl sm:text-2xl font-black font-mono-numbers text-white">15</span>
               <span class="text-xs text-slate-400 font-bold">%</span>
             </div>
-            <span class="text-[10px] text-slate-400 mt-1">WIG20TR / mWIG40TR</span>
+            <span class="text-[10px] text-slate-400 mt-1 truncate">WIG20TR / mWIG40TR</span>
           </div>
 
-          <div class="bg-slate-950/50 border border-indigo-500/30 rounded-xl p-3 flex flex-col justify-between">
+          <div class="bg-slate-950/50 border border-indigo-500/30 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between">
             <div class="flex items-center space-x-1.5 text-indigo-400 text-xs font-medium mb-1">
-              <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-              <span>Obligacje Skarbowe</span>
+              <span class="w-2 h-2 rounded-full bg-indigo-400 shrink-0"></span>
+              <span class="truncate">Obligacje Skarbowe</span>
             </div>
             <div class="flex items-baseline space-x-1">
-              <span id="weight-bonds-pct" class="text-2xl font-black font-mono-numbers text-white">30</span>
+              <span id="weight-bonds-pct" class="text-xl sm:text-2xl font-black font-mono-numbers text-white">30</span>
               <span class="text-xs text-slate-400 font-bold">%</span>
             </div>
-            <span class="text-[10px] text-slate-400 mt-1">Beta TBSP + TOS/COI</span>
+            <span class="text-[10px] text-slate-400 mt-1 truncate">Beta TBSP + TOS/COI</span>
           </div>
 
-          <div class="bg-slate-950/50 border border-amber-500/30 rounded-xl p-3 flex flex-col justify-between">
+          <div class="bg-slate-950/50 border border-amber-500/30 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between">
             <div class="flex items-center space-x-1.5 text-amber-400 text-xs font-medium mb-1">
-              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-              <span>Płynność i Złoto</span>
+              <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+              <span class="truncate">Płynność i Złoto</span>
             </div>
             <div class="flex items-baseline space-x-1">
-              <span id="weight-cash-pct" class="text-2xl font-black font-mono-numbers text-white">5</span>
+              <span id="weight-cash-pct" class="text-xl sm:text-2xl font-black font-mono-numbers text-white">5</span>
               <span class="text-xs text-slate-400 font-bold">%</span>
             </div>
-            <span class="text-[10px] text-slate-400 mt-1">Poduszka BFG / 4GLD</span>
+            <span class="text-[10px] text-slate-400 mt-1 truncate">Poduszka BFG / 4GLD</span>
           </div>
         </div>
       </div>
@@ -622,39 +634,39 @@
         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
           <span>Konkretne Instrumenty Inwestycyjne (Tickery i Działanie na Dziś)</span>
         </h3>
-        <div id="alloc-instruments-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div id="alloc-instruments-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <!-- Rendered dynamically by app.js -->
         </div>
       </div>
 
       <!-- Interactive Monthly Contribution Calculator & OKI Guide (2 columns) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 pt-1">
         
         <!-- Left: Monthly Contribution Calculator (7 cols) -->
-        <div class="lg:col-span-7 bg-slate-950/70 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
+        <div class="lg:col-span-7 bg-slate-950/70 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col justify-between">
           <div>
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <div class="flex flex-wrap items-center justify-between gap-1.5 mb-2.5">
+              <h3 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
                 <span class="text-base">🧮</span>
                 Kalkulator Comiesięcznej Dopłaty do OKI
               </h3>
-              <span class="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                Automatyczny Podział Kwoty
+              <span class="text-[10px] sm:text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                Automatyczny Podział
               </span>
             </div>
-            <p class="text-xs text-slate-400 mb-4">
-              Wpisz planowaną comiesięczną kwotę dopłaty w PLN. Narzędzie automatycznie rozbije ją na konkretne instrumenty zgodnie z dzisiejszą diagnozą ryzyka.
+            <p class="text-[11px] sm:text-xs text-slate-400 mb-3.5 leading-relaxed">
+              Wpisz planowaną kwotę comiesięcznej dopłaty. Narzędzie automatycznie rozbije ją na konkretne instrumenty zgodnie z dzisiejszą diagnozą ryzyka.
             </p>
 
             <!-- Input & Quick Select Preset Buttons -->
-            <div class="space-y-3 mb-4">
+            <div class="space-y-2.5 mb-4">
               <div class="flex flex-col sm:flex-row gap-2">
                 <div class="relative flex-1">
                   <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold text-xs">PLN</span>
                   <input type="number" id="calc-amount-input" value="1500" min="100" step="50" placeholder="np. 1500" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-12 pr-4 py-2.5 text-sm text-white font-mono-numbers focus:outline-none focus:border-indigo-500">
                 </div>
-                <button id="btn-calc-split" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/30 transition active:scale-95">
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button id="btn-calc-split" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/30 transition active:scale-95">
+                  <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                   <span>Przelicz podział kwoty</span>
@@ -664,11 +676,11 @@
               <!-- Presets -->
               <div class="flex flex-wrap items-center gap-1.5 text-xs">
                 <span class="text-slate-500 text-[11px]">Szybki wybór:</span>
-                <button type="button" class="btn-preset-amount px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="500">500 zł</button>
-                <button type="button" class="btn-preset-amount px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="1000">1 000 zł</button>
-                <button type="button" class="btn-preset-amount px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="1500">1 500 zł</button>
-                <button type="button" class="btn-preset-amount px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="2500">2 500 zł</button>
-                <button type="button" class="btn-preset-amount px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="5000">5 000 zł</button>
+                <button type="button" class="btn-preset-amount px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="500">500 zł</button>
+                <button type="button" class="btn-preset-amount px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="1000">1 000 zł</button>
+                <button type="button" class="btn-preset-amount px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="1500">1 500 zł</button>
+                <button type="button" class="btn-preset-amount px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="2500">2 500 zł</button>
+                <button type="button" class="btn-preset-amount px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono-numbers text-[11px] transition" data-amount="5000">5 000 zł</button>
               </div>
             </div>
 
@@ -680,27 +692,27 @@
         </div>
 
         <!-- Right: OKI Legal & Strategic Guide (5 cols) -->
-        <div class="lg:col-span-5 bg-slate-950/70 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
+        <div class="lg:col-span-5 bg-slate-950/70 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col justify-between">
           <div>
             <div class="flex items-center space-x-2 text-indigo-400 font-bold text-xs uppercase tracking-wider mb-2">
               <span class="text-base">📜</span>
               <span>Zasady OKI (Ustawa z 3 lipca 2026 r.)</span>
             </div>
-            <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+            <p class="text-xs text-slate-300 mb-3.5 leading-relaxed">
               Nowe Osobiste Konta Inwestycyjne (od 1.01.2027) zwalniają z 19% podatku Belki do łącznej wartości <strong class="text-white">100 000 zł</strong> aktywów.
             </p>
 
-            <ul class="space-y-2.5 text-xs text-slate-300">
+            <ul class="space-y-2 text-xs text-slate-300">
               <li class="flex items-start gap-2">
-                <span class="text-emerald-400 font-bold mt-0.5">✓</span>
+                <span class="text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
                 <span><strong class="text-white">Podlimit 25 000 zł:</strong> Maksymalnie 25k zł w bezpiecznych lokatach lub obligacjach detalicznych Skarbu Państwa (TOS / COI).</span>
               </li>
               <li class="flex items-start gap-2">
-                <span class="text-emerald-400 font-bold mt-0.5">✓</span>
+                <span class="text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
                 <span><strong class="text-white">Min. 75 000 zł na giełdę:</strong> Aby w pełni wykorzystać 100k ulgi, co najmniej 75k zł musi pracować w ETF-ach (VWCE, TBSP) lub akcjach GPW.</span>
               </li>
               <li class="flex items-start gap-2">
-                <span class="text-emerald-400 font-bold mt-0.5">✓</span>
+                <span class="text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
                 <span><strong class="text-white">Pełna elastyczność:</strong> Środki nie są blokowane do 60. roku życia (w przeciwieństwie do IKE/IKZE). Wypłata możliwa w każdej chwili bez utraty dotychczasowej ulgi!</span>
               </li>
             </ul>
@@ -723,21 +735,21 @@
     <!-- ========================================== -->
     <!-- TOP NEWSY GOSPODARCZE (PULS RYNKU)         -->
     <!-- ========================================== -->
-    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-3 sm:mb-4">
         <div class="flex items-center space-x-2">
-          <div class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></div>
-          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Puls Rynku — Najważniejsze Wiadomości Gospodarcze</h2>
+          <div class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse shrink-0"></div>
+          <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Puls Rynku — Najważniejsze Wiadomości Gospodarcze</h2>
         </div>
-        <div class="text-xs text-slate-400 flex items-center space-x-2">
+        <div class="text-[11px] sm:text-xs text-slate-400 flex items-center space-x-2">
           <span>Źródło: Bankier.pl / PAP / TVN24</span>
           <span>•</span>
-          <span class="text-sky-400 font-medium">Kliknij artykuł, aby przejść do źródła ↗</span>
+          <span class="text-sky-400 font-medium">Kliknij artykuł ↗</span>
         </div>
       </div>
 
       <!-- News Grid -->
-      <div id="news-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div id="news-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <div class="col-span-full py-6 text-center text-slate-500 text-xs">
           Wczytywanie najświeższych wiadomości gospodarczych...
         </div>
@@ -745,52 +757,52 @@
     </section>
 
     <!-- KPI METRIC CARDS (4 Columns) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
       
       <!-- KPI 1: Yield Curve Spread -->
-      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Nachylenie Krzywej (10Y - 2Y)</div>
-        <div class="flex items-baseline space-x-1.5 mb-1">
-          <span id="kpi-curve-val" class="text-2xl font-bold font-mono-numbers text-white">--</span>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 sm:p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 truncate">Nachylenie Krzywej (10Y - 2Y)</div>
+        <div class="flex items-baseline space-x-1 sm:space-x-1.5 mb-1">
+          <span id="kpi-curve-val" class="text-xl sm:text-2xl font-bold font-mono-numbers text-white">--</span>
           <span class="text-xs text-slate-400">pp.</span>
         </div>
-        <div id="kpi-curve-sub" class="text-xs text-slate-400 font-mono-numbers">
+        <div id="kpi-curve-sub" class="text-[10px] sm:text-xs text-slate-400 font-mono-numbers truncate">
           PL10Y: -- | PL2Y: --
         </div>
       </div>
 
       <!-- KPI 2: Sovereign Spread -->
-      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Spread Kredytowy PL - DE</div>
-        <div class="flex items-baseline space-x-1.5 mb-1">
-          <span id="kpi-spread-val" class="text-2xl font-bold font-mono-numbers text-white">--</span>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 sm:p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 truncate">Spread Kredytowy PL - DE</div>
+        <div class="flex items-baseline space-x-1 sm:space-x-1.5 mb-1">
+          <span id="kpi-spread-val" class="text-xl sm:text-2xl font-bold font-mono-numbers text-white">--</span>
           <span class="text-xs text-slate-400">bps</span>
         </div>
-        <div id="kpi-spread-sub" class="text-xs text-slate-400 font-mono-numbers">
+        <div id="kpi-spread-sub" class="text-[10px] sm:text-xs text-slate-400 font-mono-numbers truncate">
           Bund 10Y: --
         </div>
       </div>
 
       <!-- KPI 3: FX Pressure -->
-      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Presja Walutowa (NBP)</div>
-        <div class="flex items-baseline space-x-2 mb-1">
-          <span id="kpi-usd-val" class="text-2xl font-bold font-mono-numbers text-white">--</span>
-          <span id="kpi-usd-chg" class="text-xs px-1.5 py-0.5 rounded font-mono-numbers bg-slate-800 text-slate-300">--</span>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 sm:p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 truncate">Presja Walutowa (NBP)</div>
+        <div class="flex items-baseline space-x-1.5 mb-1">
+          <span id="kpi-usd-val" class="text-xl sm:text-2xl font-bold font-mono-numbers text-white">--</span>
+          <span id="kpi-usd-chg" class="text-[10px] sm:text-xs px-1.5 py-0.5 rounded font-mono-numbers bg-slate-800 text-slate-300">--</span>
         </div>
-        <div id="kpi-eur-sub" class="text-xs text-slate-400 font-mono-numbers">
+        <div id="kpi-eur-sub" class="text-[10px] sm:text-xs text-slate-400 font-mono-numbers truncate">
           EUR: --
         </div>
       </div>
 
       <!-- KPI 4: Equity Trend WIG -->
-      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 shadow-sm hover:border-slate-700 transition">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Trend Giełdowy (WIG)</div>
-        <div class="flex items-baseline space-x-1.5 mb-1">
-          <span id="kpi-wig-val" class="text-2xl font-bold font-mono-numbers text-white">--</span>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 sm:p-4 shadow-sm hover:border-slate-700 transition">
+        <div class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 truncate">Trend Giełdowy (WIG)</div>
+        <div class="flex items-baseline space-x-1 sm:space-x-1.5 mb-1">
+          <span id="kpi-wig-val" class="text-xl sm:text-2xl font-bold font-mono-numbers text-white">--</span>
           <span class="text-xs text-slate-400">pkt</span>
         </div>
-        <div id="kpi-wig-sub" class="text-xs text-slate-400 font-mono-numbers">
+        <div id="kpi-wig-sub" class="text-[10px] sm:text-xs text-slate-400 font-mono-numbers truncate">
           SMA200: --
         </div>
       </div>
@@ -798,60 +810,60 @@
     </div>
 
     <!-- INTERACTIVE CHARTS (2x2 Grid) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
       <!-- Chart 1: Risk Index History -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
             Historia Indeksu Ryzyka (0 - 100 pkt)
           </h3>
           <span class="text-[10px] text-slate-400 font-mono-numbers">Ostatnie sesje</span>
         </div>
-        <div class="relative h-64 w-full">
+        <div class="relative h-52 sm:h-64 w-full min-w-0">
           <canvas id="chart-risk"></canvas>
         </div>
       </div>
 
       <!-- Chart 2: Yield Curve Slope -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 shrink-0"></span>
             Nachylenie Krzywej Dochodowości (PL10Y - PL2Y)
           </h3>
           <span class="text-[10px] text-slate-400 font-mono-numbers">Próg inwersji: 0.00 pp.</span>
         </div>
-        <div class="relative h-64 w-full">
+        <div class="relative h-52 sm:h-64 w-full min-w-0">
           <canvas id="chart-curve"></canvas>
         </div>
       </div>
 
       <!-- Chart 3: Currency Rates USD / EUR -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
             Kursy NBP: USD/PLN i EUR/PLN
           </h3>
           <span class="text-[10px] text-slate-400 font-mono-numbers">Oficjalna tabela A NBP</span>
         </div>
-        <div class="relative h-64 w-full">
+        <div class="relative h-52 sm:h-64 w-full min-w-0">
           <canvas id="chart-fx"></canvas>
         </div>
       </div>
 
       <!-- Chart 4: WIG vs SMA200 -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
             Indeks WIG na tle średniej SMA200
           </h3>
           <span class="text-[10px] text-slate-400 font-mono-numbers">Reżim techniczny</span>
         </div>
-        <div class="relative h-64 w-full">
+        <div class="relative h-52 sm:h-64 w-full min-w-0">
           <canvas id="chart-wig"></canvas>
         </div>
       </div>
@@ -859,19 +871,22 @@
     </div>
 
     <!-- HISTORICAL READINGS TABLE -->
-    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
-      <div class="flex items-center justify-between mb-4">
+    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-3 sm:mb-4">
         <div>
-          <h3 class="text-sm font-bold text-slate-200">Rejestr Ostatnich 10 Sesji Giełdowych</h3>
-          <p class="text-xs text-slate-400">Szczegółowe parametry składowe modelu kryzysowego</p>
+          <h3 class="text-xs sm:text-sm font-bold text-slate-200">Rejestr Ostatnich 10 Sesji Giełdowych</h3>
+          <p class="text-[11px] sm:text-xs text-slate-400">Szczegółowe parametry składowe modelu kryzysowego</p>
         </div>
-        <span class="text-[11px] font-mono-numbers text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded">
-          SQLite Time-Series
-        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-slate-400 sm:hidden">Przesuń palcem w bok ↔</span>
+          <span class="text-[10px] sm:text-[11px] font-mono-numbers text-slate-400 bg-slate-800/80 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded">
+            SQLite Time-Series
+          </span>
+        </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
+      <div class="overflow-x-auto -mx-1 sm:mx-0">
+        <table class="w-full text-left text-xs whitespace-nowrap">
           <thead class="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-950/60 border-b border-slate-800">
             <tr>
               <th class="py-3 px-3">Data</th>

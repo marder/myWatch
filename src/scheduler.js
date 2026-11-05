@@ -46,7 +46,7 @@ async function runUpdate() {
  * Perform deep backfill for a requested number of days
  */
 async function runBackfill(requestedDays) {
-  const days = Math.min(Math.max(parseInt(requestedDays, 10) || 60, 10), 250);
+  const days = Math.min(Math.max(parseInt(requestedDays, 10) || config.backfillDays, 10), 300);
   console.log(`[Scheduler] Running backfill for ${days} trading sessions...`);
   const indicators = await fetcher.fetchAllIndicators();
   const backfillReadings = analyzer.processHistoricalBackfill(indicators, days);

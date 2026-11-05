@@ -343,29 +343,36 @@ async function fetchAllIndicators() {
   console.log('[Fetcher] Fetching macroeconomic & market data...');
 
   // Concurrently fetch NBP currency rates, TradingView live scanner, and baseline series
+  const historyDays = config.wigHistoryDays || 460;
   const [usdRes, eurRes, tvLiveRes, pl10yRes, pl2yRes, de10yRes, wigRes, wig20Res, mwig40Res, swig80Res, wigBankiRes] = await Promise.allSettled([
     fetchNbpSeries('usd'),
     fetchNbpSeries('eur'),
     fetchTradingViewLive(),
-    fetchStooqSeries(config.fetcher.stooqSymbols.pl10y, 120),
-    fetchStooqSeries(config.fetcher.stooqSymbols.pl2y, 120),
-    fetchStooqSeries(config.fetcher.stooqSymbols.de10y, 120),
-    fetchStooqSeries(config.fetcher.stooqSymbols.wig, config.wigHistoryDays),
-    fetchStooqSeries(config.fetcher.stooqSymbols.wig20, 120),
-    fetchStooqSeries(config.fetcher.stooqSymbols.mwig40, 120),
-    fetchStooqSeries(config.fetcher.stooqSymbols.swig80, 120),
-    fetchStooqSeries(config.fetcher.stooqSymbols.wig_banki, 120),
+    fetchStooqSeries(config.fetcher.stooqSymbols.pl10y, historyDays),
+    fetchStooqSeries(config.fetcher.stooqSymbols.pl2y, historyDays),
+    fetchStooqSeries(config.fetcher.stooqSymbols.de10y, historyDays),
+    fetchStooqSeries(config.fetcher.stooqSymbols.wig, historyDays),
+    fetchStooqSeries(config.fetcher.stooqSymbols.wig20, historyDays),
+    fetchStooqSeries(config.fetcher.stooqSymbols.mwig40, historyDays),
+    fetchStooqSeries(config.fetcher.stooqSymbols.swig80, historyDays),
+    fetchStooqSeries(config.fetcher.stooqSymbols.wig_banki, historyDays),
   ]);
 
   const extract = (res, name) => {
-    if (res.status === 'fulfilled' && res.value && res.value.length > 0) {
-      return [...res.value];
-    }
     const seed = getSeedData();
-    if (seed && seed[name]) {
-      return [...seed[name]];
+    const seedSeries = (seed && seed[name]) ? [...seed[name]] : [];
+
+    if (res.status === 'fulfilled' && res.value && res.value.length > 0) {
+      // Merge live/API values over seed series to preserve deep historical baseline
+      const map = new Map();
+      seedSeries.forEach(item => map.set(item.date, item.close));
+      res.value.forEach(item => map.set(item.date, item.close));
+      return Array.from(map.entries())
+        .map(([date, close]) => ({ date, close }))
+        .sort((a, b) => a.date.localeCompare(b.date));
     }
-    return [];
+
+    return seedSeries;
   };
 
   const indicators = {

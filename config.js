@@ -71,8 +71,8 @@ module.exports = {
     }
   },
 
-  backfillDays: parseInt(process.env.BACKFILL_DAYS, 10) || 60,
-  wigHistoryDays: 320, // required to compute SMA200 for up to 120-250 days
+  backfillDays: parseInt(process.env.BACKFILL_DAYS, 10) || 250,
+  wigHistoryDays: parseInt(process.env.WIG_HISTORY_DAYS, 10) || 460, // full year backfill + SMA200 lookback window
 
   // Risk Scoring Thresholds & Weights
   scoring: {

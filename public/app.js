@@ -195,30 +195,31 @@ function renderGpwIndices(indices) {
     return;
   }
 
-  container.innerHTML = indices.map(idx => {
+  container.innerHTML = indices.map((idx, index) => {
     const isUp = idx.change1dPct >= 0;
     const sign = isUp ? '+' : '';
     const pillColor = isUp
       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
       : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
     const formattedClose = idx.close != null ? Math.round(idx.close).toLocaleString('pl-PL') : '--';
+    const spanColClass = index === 4 ? 'col-span-2 sm:col-span-1' : '';
 
     return `
-      <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 hover:border-slate-700 transition flex flex-col justify-between">
+      <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 sm:p-3.5 hover:border-slate-700 transition flex flex-col justify-between ${spanColClass}">
         <div>
-          <div class="flex items-center justify-between mb-1.5">
+          <div class="flex items-center justify-between mb-1">
             <span class="text-xs font-black tracking-wider text-white">${idx.name}</span>
             <span class="text-[10px] font-mono-numbers px-1.5 py-0.5 rounded border ${pillColor}">
               ${sign}${idx.change1dPct != null ? idx.change1dPct.toFixed(2) : 0}%
             </span>
           </div>
-          <p class="text-[10px] text-slate-400 mb-2 truncate">${idx.label}</p>
+          <p class="text-[10px] text-slate-400 mb-1.5 truncate">${idx.label}</p>
         </div>
         <div>
-          <div class="text-xl font-bold font-mono-numbers text-slate-100 mb-1">
+          <div class="text-base sm:text-xl font-bold font-mono-numbers text-slate-100 mb-1">
             ${formattedClose} <span class="text-[10px] font-normal text-slate-500">pkt</span>
           </div>
-          <div class="text-[10px] text-slate-400 flex items-center justify-between border-t border-slate-900 pt-1.5">
+          <div class="text-[10px] text-slate-400 flex items-center justify-between border-t border-slate-900 pt-1">
             <span>Sesja:</span>
             <span class="font-semibold ${isUp ? 'text-emerald-400' : 'text-rose-400'}">${idx.status || 'Stabilny'}</span>
           </div>
@@ -289,7 +290,7 @@ function renderHeroSection(data) {
   const scoreVal = document.getElementById('risk-score-value');
   if (scoreVal) {
     scoreVal.textContent = data.risk_score != null ? data.risk_score : '--';
-    scoreVal.className = `text-6xl font-black font-mono-numbers tracking-tight ${statusCfg.textColor}`;
+    scoreVal.className = `text-4xl sm:text-6xl font-black font-mono-numbers tracking-tight ${statusCfg.textColor}`;
   }
 
   const p1Val = data.score_curve || 0;
@@ -559,25 +560,25 @@ function renderCalculationResults(data) {
   const total = (data.totalAmountPln || 0).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   container.innerHTML = `
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-3">
-      <div class="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-3.5 space-y-2.5 sm:space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs border-b border-slate-800 pb-2">
         <span class="text-slate-400">Podział miesięcznej kwoty: <strong class="text-white font-mono-numbers text-sm">${total} PLN</strong></span>
-        <span class="text-[11px] font-mono-numbers px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+        <span class="text-[11px] font-mono-numbers px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 w-fit">
           Reżim: ${data.regime || 'STABILNY'}
         </span>
       </div>
 
       <div class="divide-y divide-slate-800/60 space-y-2">
         ${data.split.map(item => `
-          <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div class="space-y-0.5">
+          <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
+            <div class="space-y-0.5 min-w-0">
               <div class="flex items-center gap-2">
                 <span class="text-xs font-bold text-white">${item.name}</span>
                 <span class="text-[10px] font-mono-numbers text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">${item.ticker}</span>
               </div>
-              <p class="text-[11px] text-slate-400">${item.instrumentName} • <span class="text-slate-500">${item.note}</span></p>
+              <p class="text-[11px] text-slate-400 leading-snug">${item.instrumentName} • <span class="text-slate-500">${item.note}</span></p>
             </div>
-            <div class="text-right shrink-0">
+            <div class="text-left sm:text-right shrink-0">
               <div class="text-sm font-black font-mono-numbers text-emerald-400">
                 ${(item.amountPln || 0).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PLN
               </div>

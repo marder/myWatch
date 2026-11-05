@@ -452,7 +452,7 @@ function computeReadingForDate(targetDate, wigIndex, indicators) {
 }
 
 /**
- * Execute 60-trading-day Historical Backfill
+ * Execute Historical Backfill (up to full annual trading calendar)
  */
 function processHistoricalBackfill(indicators, backfillCount = config.backfillDays) {
   const { wig } = indicators;
