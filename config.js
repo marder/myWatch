@@ -42,7 +42,13 @@ module.exports = {
     timeoutMs: 12000,
     retryCount: 1,
     retryDelayMs: 1500,
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+    enableStooq: process.env.ENABLE_STOOQ !== 'false',
+    enableTradingView: true,
+    tradingViewUrls: {
+      bonds: 'https://scanner.tradingview.com/bonds/scan',
+      poland: 'https://scanner.tradingview.com/poland/scan',
+    },
     nbpUrls: {
       usd: 'https://api.nbp.pl/api/exchangerates/rates/a/usd/last/255/?format=json',
       eur: 'https://api.nbp.pl/api/exchangerates/rates/a/eur/last/255/?format=json',

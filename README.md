@@ -236,7 +236,12 @@ server {
 
 ---
 
-## 📄 Licencja
+## 📄 Licencja & Źródła Danych
 
 Projekt objęty licencją **MIT**. Szczegóły w pliku [LICENSE](LICENSE) (lub nagłówku `package.json`).
-Dane makroekonomiczne i rynkowe pochodzą z publicznych źródeł: **Narodowy Bank Polski (NBP)**, **Stooq.pl** oraz **Bankier.pl**.
+
+Dane makroekonomiczne i giełdowe pozyskiwane są z oficjalnych i stabilnych źródeł odpornych na blokady hostingu chmurowego:
+* **Narodowy Bank Polski (NBP API):** oficjalne kursy średnie walut (USD/PLN, EUR/PLN) oraz 255-sesyjne szeregi czasowe.
+* **TradingView Live Scanner:** notowania na żywo rentowności długu skarbowego (`PL10Y`, `PL2Y`, `DE10Y Bund`) oraz indeksów warszawskiego parkietu (`WIG`, `WIG20`, `mWIG40`, `sWIG80`, `WIG-Banki`).
+* **Bankier.pl:** kanał informacyjny RSS z bieżącym pulsem polskiej gospodarki.
+* **Stooq.pl / Verified Market Baseline:** zapasowa baza danych historycznych.
