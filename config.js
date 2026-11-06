@@ -17,10 +17,10 @@ module.exports = {
   cronSchedule: process.env.CRON_SCHEDULE || '30 18 * * 1-5',
   timezone: 'Europe/Warsaw',
 
-  // Authentication configuration (default: admin / admin123, configurable via .env)
+  // Authentication configuration (strictly loaded from .env)
   auth: {
-    adminUser: process.env.ADMIN_USER || 'admin',
-    adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
+    adminUser: process.env.ADMIN_USER || '',
+    adminPassword: process.env.ADMIN_PASSWORD || '',
   },
 
   // Automated Email Backup configuration

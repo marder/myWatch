@@ -1123,9 +1123,9 @@ async function handleGateLogin(e) {
     sessionStorage.setItem('macro_radar_token', data.token);
 
     const userLabel = document.getElementById('header-user-label');
-    if (userLabel) userLabel.textContent = data.user || 'admin';
+    if (userLabel) userLabel.textContent = data.user || 'Użytkownik';
     const adminUserLabel = document.getElementById('admin-username-label');
-    if (adminUserLabel) adminUserLabel.textContent = data.user || 'admin';
+    if (adminUserLabel) adminUserLabel.textContent = data.user || 'Użytkownik';
 
     showToast('Zalogowano pomyślnie!', 'success');
     showAppView();
@@ -1167,9 +1167,9 @@ async function handleLogin(e) {
     localStorage.setItem('macro_radar_token', data.token);
     sessionStorage.setItem('macro_radar_token', data.token);
     const labelEl = document.getElementById('admin-username-label');
-    if (labelEl) labelEl.textContent = data.user || 'admin';
+    if (labelEl) labelEl.textContent = data.user || 'Użytkownik';
     const userLabel = document.getElementById('header-user-label');
-    if (userLabel) userLabel.textContent = data.user || 'admin';
+    if (userLabel) userLabel.textContent = data.user || 'Użytkownik';
     showToast('Zalogowano pomyślnie jako administrator!', 'success');
     showAdminDashboard();
   } catch (err) {
@@ -1388,9 +1388,9 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(d => {
         if (d && d.authenticated) {
           const userLabel = document.getElementById('header-user-label');
-          if (userLabel) userLabel.textContent = d.user || 'admin';
+          if (userLabel) userLabel.textContent = d.user || 'Użytkownik';
           const adminUserLabel = document.getElementById('admin-username-label');
-          if (adminUserLabel) adminUserLabel.textContent = d.user || 'admin';
+          if (adminUserLabel) adminUserLabel.textContent = d.user || 'Użytkownik';
           showAppView();
           loadDashboard();
         } else {
