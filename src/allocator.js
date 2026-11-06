@@ -6,19 +6,19 @@
 // Master catalog of recommended core instruments for Polish investors (OKI / IKE / IKZE)
 const INSTRUMENTS = {
   globalEquities: {
-    name: 'Vanguard FTSE All-World UCITS ETF (Acc)',
-    ticker: 'VWCE.DE / VWRA.L',
-    category: 'Globalne Akcje (Szeroki Świat)',
-    description: 'Szeroki koszyk ponad 3 600 spółek z rynków rozwiniętych i wschodzących (Apple, Microsoft, Nvidia, TSMC, itp.). Akumulujący – reinwestuje dywidendy bez podatku.',
-    role: 'Główny motor długoterminowego wzrostu majątku i ochrona przed inflacją.',
-    assetType: 'ETF Akcyjny',
+    name: 'Beta ETF S&P 500 PLN-Hedged',
+    ticker: 'ETFBSPXPL.PL',
+    category: 'Globalne Akcje (S&P 500 w PLN / Hedged)',
+    description: 'Zgodny z wymogami OKI — notowany na GPW w polskich złotych (PLN), z zabezpieczeniem ryzyka walutowego lub w strukturze funduszu FIO.',
+    role: 'Główny motor długoterminowego wzrostu majątku i ekspozycja globalna w ramach konta OKI bez podatku Belki.',
+    assetType: 'ETF Akcyjny GPW (PLN)',
     eligibleOki: true,
   },
   polishEquitiesWig20: {
     name: 'Beta ETF WIG20TR',
     ticker: 'ETFBW20TR.PL',
     category: 'Polskie Akcje (GPW Blue Chips)',
-    description: '20 największych spółek GPW (Orlen, PKO BP, Dino, KGHM) w wersji Total Return (reinwestującej dywidendy).',
+    description: '20 największych spółek GPW w wersji Total Return (reinwestującej dywidendy). Zgodny z wymogami OKI (notowany na GPW w PLN).',
     role: 'Ekspozycja na polski rynek i korzyści z wysokich dywidend krajowych liderów.',
     assetType: 'ETF Akcyjny GPW',
     eligibleOki: true,
@@ -27,7 +27,7 @@ const INSTRUMENTS = {
     name: 'Beta ETF mWIG40TR',
     ticker: 'ETFBM40TR.PL',
     category: 'Polskie Średnie Spółki (Wzrost)',
-    description: '40 średnich spółek z GPW – tradycyjnie najbardziej rentowny i zwinny segment polskiej gospodarki.',
+    description: '40 średnich spółek z GPW – tradycyjnie najbardziej rentowny i zwinny segment polskiej gospodarki. Zgodny z wymogami OKI (notowany na GPW w PLN).',
     role: 'Dodatkowy potencjał wzrostu gospodarczego Polski.',
     assetType: 'ETF Akcyjny GPW',
     eligibleOki: true,
@@ -36,7 +36,7 @@ const INSTRUMENTS = {
     name: 'Beta ETF TBSP (Polskie Obligacje Skarbowe)',
     ticker: 'ETFBSTBSP.PL',
     category: 'Obligacje Skarbowe Hurtowe (Rynek)',
-    description: 'Indeks polskich obligacji skarbowych o stałym oprocentowaniu (Treasury BondSpot Poland). Zyskuje na wartości przy cięciach stóp przez NBP.',
+    description: 'Indeks polskich obligacji skarbowych (Treasury BondSpot Poland) notowany na GPW w PLN. Wolny od podlimitu 25k zł – pozwala wykorzystać pełne 100 000 zł ulgi w OKI.',
     role: 'Kluczowy instrument dłużny w OKI do wykorzystania pełnego limitu 100 tys. zł (poza podlimitem 25k).',
     assetType: 'ETF Dłużny GPW',
     eligibleOki: true,
@@ -170,9 +170,13 @@ function getFullPortfolioRecommendation(riskScore, latestReading = {}) {
   // Concrete instrument buckets
   const buckets = [
     {
-      category: '1. Globalny Koszyk Akcji (ETF)',
+      category: '1. Globalny Koszyk Akcji (ETF w PLN)',
       weightPct: allocation.weights.globalEquities,
       instrument: INSTRUMENTS.globalEquities,
+      secondaryInstrument: {
+        name: 'inPZU Akcje Rynków Rozwiniętych O (inPZU Global Equity PLN)',
+        ticker: 'inPZU FIO',
+      },
       actionAdvice: riskScore > 50 
         ? 'Kupuj wyłącznie w małych, regularnych transzach (DCA), nie rób dużych dopłat.' 
         : 'Główny cel dopłat. Kupuj regularnie co miesiąc bez prób zgadywania dołka.',
@@ -212,11 +216,11 @@ function getFullPortfolioRecommendation(riskScore, latestReading = {}) {
     keyRules: [
       'Zwolnienie z podatku Belki (19%) do kwoty 100 000 zł łącznej wartości aktywów.',
       'Sublimit 25 000 zł na bezpieczną część oszczędnościową (lokaty, obligacje detaliczne COI/TOS).',
-      'Pozostałe co najmniej 75 000 zł musi pracować na rynku kapitałowym (ETF-y akcyjne, obligacyjne TBSP na GPW, akcje).',
+      'Pozostałe co najmniej 75 000 zł musi pracować na rynku kapitałowym (ETF-y akcyjne, obligacyjne TBSP na GPW, akcje w PLN).',
       'Brak zamrożenia środków – zyski można wypłacić w dowolnej chwili bez utraty ulgi podatkowej.',
       'Od nadwyżki ponad 100 000 zł naliczany jest nowy podatek od wartości aktywów.',
     ],
-    tacticalTip: 'W koncie OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe 75 tys. zł podziel na ETF All-World (ok. 50-60 tys. zł) oraz ETF na polskie obligacje skarbowe TBSP na giełdzie (15-25 tys. zł). W ten sposób w 100% wykorzystasz ulgę bez podatku Belki przy minimalnym ryzyku!'
+    tacticalTip: 'W koncie OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe min. 75 tys. zł ulokuj w notowanym na GPW w PLN funduszu Beta ETF S&P 500 PLN-Hedged (ETFBSPXPL.PL) oraz hurtowym ETF-ie obligacji skarbowych TBSP na giełdzie (ETFBSTBSP.PL). Całość portfela pozostaje w 100% w PLN i spełnia wszystkie wymogi ustawy o OKI bez podatku Belki!'
   };
 
   return {
@@ -241,12 +245,12 @@ function calculateContributionSplit(amountPln, riskScore, latestReading = {}) {
 
   const split = [
     {
-      name: 'Globalne Akcje (ETF)',
-      instrumentName: 'Vanguard FTSE All-World (VWCE)',
-      ticker: 'VWCE.DE',
+      name: 'Globalne Akcje (ETF w PLN)',
+      instrumentName: 'Beta ETF S&P 500 PLN-Hedged (lub inPZU Global Equity PLN)',
+      ticker: 'ETFBSPXPL.PL',
       percent: weights.globalEquities,
       amountPln: Math.round((total * (weights.globalEquities / 100)) * 100) / 100,
-      note: 'Kup na rachunku maklerskim / OKI',
+      note: 'Zgodny z OKI — notowany na GPW w PLN',
     },
     {
       name: 'Polskie Akcje (GPW)',
@@ -262,7 +266,7 @@ function calculateContributionSplit(amountPln, riskScore, latestReading = {}) {
       ticker: 'ETFBSTBSP / TOS / COI',
       percent: weights.treasuryBonds,
       amountPln: Math.round((total * (weights.treasuryBonds / 100)) * 100) / 100,
-      note: 'W OKI: TBSP na giełdzie lub TOS/COI w podlimicie 25k',
+      note: 'W OKI: TBSP na giełdzie bez limitu 25k, lub TOS/COI w podlimicie',
     },
     {
       name: 'Płynna Gotówka / Złoto',

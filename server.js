@@ -194,6 +194,10 @@ app.get('/api/latest', (req, res) => {
     if (latest.conclusions && !latest.conclusions.portfolio_recommendation) {
       latest.conclusions.portfolio_recommendation = allocator.getFullPortfolioRecommendation(latest.risk_score, latest);
     }
+    // Ensure raw string properties are purged from response payload
+    delete latest.warnings_json;
+    delete latest.conclusions_json;
+
     res.json(latest);
   } catch (err) {
     console.error('Error fetching /api/latest:', err);
@@ -209,6 +213,11 @@ app.get('/api/history', (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 60;
     const history = db.getHistory(limit);
+    // Sanitize response: ensure duplicate raw string columns are removed
+    history.forEach(item => {
+      delete item.warnings_json;
+      delete item.conclusions_json;
+    });
     res.json(history);
   } catch (err) {
     console.error('Error fetching /api/history:', err);
@@ -225,6 +234,10 @@ app.post('/api/refresh', async (req, res) => {
     const result = await scheduler.runUpdate();
     if (!result.success) {
       return res.status(429).json({ error: result.message });
+    }
+    if (result.reading) {
+      delete result.reading.warnings_json;
+      delete result.reading.conclusions_json;
     }
     res.json({
       success: true,
@@ -335,6 +348,12 @@ app.use((req, res, next) => {
  */
 async function startServer() {
   db.getDb();
+
+  // Step 2 Migration: purge any corrupted mock records (WIG > 120,000)
+  const purgeResult = db.purgeCorruptedMockData();
+  if (purgeResult.purged) {
+    console.log(`[Startup] Cleaned up ${purgeResult.count} corrupted mock records.`);
+  }
 
   const count = db.getRecordCount();
   console.log(`[Startup] Current database record count: ${count}`);

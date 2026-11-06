@@ -512,12 +512,12 @@ async function calculateAndRenderContribution(amountPln) {
       regime: state.latest?.status || 'STABILNY',
       split: [
         {
-          name: 'Globalne Akcje (ETF)',
-          instrumentName: 'Vanguard FTSE All-World (VWCE)',
-          ticker: 'VWCE.DE',
+          name: 'Globalne Akcje (ETF w PLN)',
+          instrumentName: 'Beta ETF S&P 500 PLN-Hedged (lub inPZU Global Equity PLN)',
+          ticker: 'ETFBSPXPL.PL',
           percent: weights.globalEquities,
           amountPln: Math.round((total * (weights.globalEquities / 100)) * 100) / 100,
-          note: 'Kup na rachunku maklerskim / OKI',
+          note: 'Zgodny z OKI — notowany na GPW w PLN',
         },
         {
           name: 'Polskie Akcje (GPW)',

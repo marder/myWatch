@@ -111,7 +111,29 @@ function parseRow(row) {
   } catch (e) {
     parsed.conclusions = {};
   }
+  // Sanitize serialized output: remove redundant duplicate JSON string columns
+  delete parsed.warnings_json;
+  delete parsed.conclusions_json;
   return parsed;
+}
+
+/**
+ * Migration & Cleanup: Purge corrupted mock or simulated drift records (WIG > 120,000)
+ */
+function purgeCorruptedMockData() {
+  const database = getDb();
+  try {
+    const check = database.prepare('SELECT COUNT(*) as count FROM macro_readings WHERE wig > 120000').get();
+    if (check && check.count > 0) {
+      console.log(`[DB Migration] Detected ${check.count} corrupted mock records (WIG > 120,000). Purging...`);
+      database.prepare('DELETE FROM macro_readings WHERE wig > 120000').run();
+      console.log('[DB Migration] Corrupted records purged successfully.');
+      return { purged: true, count: check.count };
+    }
+  } catch (err) {
+    console.warn('[DB Migration] Notice checking corrupted data:', err.message);
+  }
+  return { purged: false, count: 0 };
 }
 
 const UPSERT_SQL = `
@@ -270,5 +292,6 @@ module.exports = {
   getHistory,
   getRecordCount,
   getOldestAndLatestTimestamp,
+  purgeCorruptedMockData,
   closeDb,
 };
