@@ -413,6 +413,51 @@ function generateConclusions(totalScore, p1, p2, p3, p4, metrics, indicators, ta
     wig_sma200_diff: p4.smaDiff,
   });
 
+  // 7. Fundamental Valuation, ERP and Real Rates for OKI Strategy
+  const pl10yYield = metrics.pl10y != null ? metrics.pl10y : 5.65;
+  const wigPe = 10.4;
+  const wigPbv = 1.15;
+  const dividendYield = 4.60;
+  const earningsYield = Math.round((100 / wigPe) * 100) / 100;
+  const equityRiskPremium = Math.round((earningsYield - pl10yYield) * 100) / 100;
+
+  let erpStance = 'BARDZO ATRAKCYJNA';
+  let erpColor = 'emerald';
+  let erpAdvice = 'Wyceny akcji na GPW zapewniają wysoką premię za ryzyko ponad bezpieczne obligacje skarbowe 10Y. Sprzyja długoterminowej akumulacji akcji w OKI.';
+  if (equityRiskPremium < 0) {
+    erpStance = 'NIEKORZYSTNA';
+    erpColor = 'rose';
+    erpAdvice = 'Obligacje skarbowe oferują wyższą stopę dochodu niż zyski spółek z GPW. Zwiększ udział bezpiecznego długu skarbowego.';
+  } else if (equityRiskPremium < 1.5) {
+    erpStance = 'NEUTRALNA';
+    erpColor = 'amber';
+    erpAdvice = 'Premia za ryzyko akcji jest niska. Obligacje skarbowe stanowią silną konkurencję dla akcji.';
+  } else if (equityRiskPremium < 3.5) {
+    erpStance = 'ATRAKCYJNA';
+    erpColor = 'emerald';
+    erpAdvice = 'Umiarkowanie wysoka premia za ryzyko faworyzuje planowe, regularne zakupy DCA w ramach portfela OKI.';
+  }
+
+  const nbpRate = 5.75;
+  const cpiInflation = 4.90;
+  const realRate = Math.round((nbpRate - cpiInflation) * 100) / 100;
+
+  const fundamentalValuation = {
+    wigPe,
+    wigPbv,
+    dividendYield,
+    earningsYield,
+    pl10yYield,
+    equityRiskPremium,
+    erpStance,
+    erpColor,
+    erpAdvice,
+    nbpRate,
+    cpiInflation,
+    realRate,
+    realRateStance: realRate > 0 ? 'DODATNIA (DEFENSYWNA)' : 'UJEMNA (INFLACYJNA)',
+  };
+
   return {
     status,
     conclusions: {
@@ -423,6 +468,7 @@ function generateConclusions(totalScore, p1, p2, p3, p4, metrics, indicators, ta
       plain_language: plainLanguage,
       gpw_indices: gpwIndices,
       portfolio_recommendation: portfolioRecommendation,
+      fundamental_valuation: fundamentalValuation,
     }
   };
 }

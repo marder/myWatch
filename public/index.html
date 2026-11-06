@@ -330,6 +330,51 @@
           </div>
         </div>
 
+        <!-- Action 4: Push Notifications (ntfy.sh) -->
+        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">🔔</span>
+              <div>
+                <h4 class="text-xs font-bold text-slate-200">Powiadomienia Push na Telefon (ntfy.sh)</h4>
+                <p class="text-[11px] text-slate-400">Prywatne, natychmiastowe powiadomienia bez rejestracji i bez zbierania numeru telefonu.</p>
+              </div>
+            </div>
+            <span id="ntfy-status-badge" class="text-[10px] px-2 py-0.5 rounded border text-emerald-400 border-emerald-500/30 bg-emerald-500/10 shrink-0">ntfy.sh Aktywne</span>
+          </div>
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+            <div class="text-[11px] text-slate-300 truncate">
+              Kanał: <a id="ntfy-topic-link" href="https://ntfy.sh/radar-makro-pl-xd333r" target="_blank" class="text-sky-400 font-mono-numbers underline font-bold">radar-makro-pl-xd333r</a>
+            </div>
+            <button id="btn-test-ntfy" class="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5">
+              <span>Wyślij test ntfy.sh</span>
+            </button>
+          </div>
+          <p class="text-[10px] text-slate-500 leading-relaxed">
+            Zainstaluj darmową aplikację <strong>ntfy</strong> (Android / iOS) i zasubskrybuj powyższy temat, aby otrzymywać powiadomienia po każdej sesji.
+          </p>
+        </div>
+
+        <!-- Action 5: Daily HTML Email Digest Test -->
+        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">✉️</span>
+              <div>
+                <h4 class="text-xs font-bold text-slate-200">Raport Dzienny na E-mail (HTML Digest)</h4>
+                <p class="text-[11px] text-slate-400">Podsumowanie sesji z wytycznymi OKI wysyłane o 18:35 po zamknięciu rynku.</p>
+              </div>
+            </div>
+            <span id="email-digest-badge" class="text-[10px] px-2 py-0.5 rounded border text-slate-400 border-slate-700 shrink-0">xd333r@gmail.com</span>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="email" id="test-email-digest-input" value="xd333r@gmail.com" placeholder="Adres odbiorcy" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white font-mono-numbers focus:outline-none focus:border-sky-500">
+            <button id="btn-test-email-digest" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+              <span>Wyślij testowy raport HTML</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Logout button -->
         <div class="pt-2 flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/60">
           <span>Zalogowano jako: <strong id="admin-username-label" class="text-slate-300">--</strong></span>
@@ -647,6 +692,61 @@
         </div>
       </div>
 
+      <!-- Fundamental Valuation & Equity Risk Premium (Model Fed dla GPW) -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 sm:p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-base">📊</span>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Wyceny Fundamentalne GPW & Premia za Ryzyko (Model Fed ERP)
+              </h3>
+              <p class="text-[11px] text-slate-400">
+                Matematyczne porównanie opłacalności akcji GPW względem obligacji skarbowych 10Y
+              </p>
+            </div>
+          </div>
+          <div id="erp-stance-badge" class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono-numbers bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+            ERP: +3.97 pp (BARDZO ATRAKCYJNA)
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+          <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
+            <span class="text-[10px] text-slate-400 block mb-0.5">Cena / Zysk (P/E WIG):</span>
+            <div class="flex items-baseline gap-1">
+              <strong id="val-pe-wig" class="text-white font-mono-numbers text-sm sm:text-base">10.4x</strong>
+              <span class="text-[10px] text-emerald-400 font-medium">(Tani rynek)</span>
+            </div>
+          </div>
+          <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
+            <span class="text-[10px] text-slate-400 block mb-0.5">Earnings Yield (1 / P/E):</span>
+            <div class="flex items-baseline gap-1">
+              <strong id="val-ey-wig" class="text-white font-mono-numbers text-sm sm:text-base">9.62%</strong>
+              <span class="text-[10px] text-slate-400">zysków</span>
+            </div>
+          </div>
+          <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
+            <span class="text-[10px] text-slate-400 block mb-0.5">Rentowność PL10Y (Obligacje):</span>
+            <div class="flex items-baseline gap-1">
+              <strong id="val-pl10y" class="text-white font-mono-numbers text-sm sm:text-base">5.65%</strong>
+              <span class="text-[10px] text-indigo-400">Skarb Państwa</span>
+            </div>
+          </div>
+          <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
+            <span class="text-[10px] text-slate-400 block mb-0.5">Realna Stopa NBP (vs CPI):</span>
+            <div class="flex items-baseline gap-1">
+              <strong id="val-real-rate" class="text-emerald-400 font-mono-numbers text-sm sm:text-base">+0.85%</strong>
+              <span class="text-[10px] text-slate-400">(Dodatnia)</span>
+            </div>
+          </div>
+        </div>
+
+        <p id="erp-advice-text" class="text-[11px] text-slate-300 mt-2.5 leading-relaxed bg-slate-900/40 p-2 rounded border border-slate-800/60">
+          Wyceny akcji na GPW zapewniają ponad 3.5 pp. premii za ryzyko ponad bezpieczne obligacje skarbowe 10Y. Sprzyja długoterminowej akumulacji akcji w OKI.
+        </p>
+      </div>
+
       <!-- Target Asset Allocation Breakdown (Visual Stacked Bar & Metric Pill Boxes) -->
       <div>
         <div class="flex items-center justify-between mb-2">
@@ -778,40 +878,65 @@
           </div>
         </div>
 
-        <!-- Right: OKI Legal & Strategic Guide (5 cols) -->
+        <!-- Right: OKI Limits Tracker & Strategic Guide (5 cols) -->
         <div class="lg:col-span-5 bg-slate-950/70 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col justify-between">
           <div>
-            <div class="flex items-center space-x-2 text-indigo-400 font-bold text-xs uppercase tracking-wider mb-2">
-              <span class="text-base">📜</span>
-              <span>Zasady OKI (Ustawa z 3 lipca 2026 r.)</span>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center space-x-1.5 text-indigo-400 font-bold text-xs uppercase tracking-wider">
+                <span class="text-base">🎯</span>
+                <span>Twój Tracker Limitu OKI (Roczny)</span>
+              </div>
+              <span class="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                100 000 zł bez Belki
+              </span>
             </div>
-            <p class="text-xs text-slate-300 mb-3.5 leading-relaxed">
-              Nowe Osobiste Konta Inwestycyjne (od 1.01.2027) zwalniają z 19% podatku Belki do łącznej wartości <strong class="text-white">100 000 zł</strong> aktywów.
-            </p>
 
-            <ul class="space-y-2 text-xs text-slate-300">
-              <li class="flex items-start gap-2">
-                <span class="text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
-                <span><strong class="text-white">Podlimit 25 000 zł:</strong> Maksymalnie 25k zł w bezpiecznych lokatach lub obligacjach detalicznych Skarbu Państwa (TOS / COI).</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
-                <span><strong class="text-white">Min. 75 000 zł na giełdę:</strong> Aby w pełni wykorzystać 100k ulgi, co najmniej 75k zł musi pracować w notowanych na GPW instrumentach w PLN (Beta ETF S&P 500 PLN, TBSP, WIG20/mWIG40).</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
-                <span><strong class="text-white">Pełna elastyczność:</strong> Środki nie są blokowane do 60. roku życia (w przeciwieństwie do IKE/IKZE). Wypłata możliwa w każdej chwili bez utraty dotychczasowej ulgi!</span>
-              </li>
-            </ul>
+            <!-- Total Limit Progress -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 mb-3">
+              <div class="flex justify-between items-center text-xs mb-1">
+                <span class="text-slate-300 font-medium">Łączny limit roczny OKI:</span>
+                <span class="font-mono-numbers font-bold text-white"><span id="oki-total-used-text">0</span> / 100 000 zł (<span id="oki-total-pct">0%</span>)</span>
+              </div>
+              <div class="h-2 rounded-full bg-slate-950 overflow-hidden border border-slate-800 mb-2">
+                <div id="oki-total-bar" class="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span>Pozostało do wpłaty w tym roku:</span>
+                <strong id="oki-total-rem-text" class="text-sky-400 font-mono-numbers">100 000 zł</strong>
+              </div>
+            </div>
+
+            <!-- Retail Bonds Sublimit Progress -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 mb-3">
+              <div class="flex justify-between items-center text-xs mb-1">
+                <span class="text-slate-300 font-medium">Podlimit obligacji detalicznych (TOS/COI):</span>
+                <span class="font-mono-numbers font-bold text-white"><span id="oki-retail-used-text">0</span> / 25 000 zł (<span id="oki-retail-pct">0%</span>)</span>
+              </div>
+              <div class="h-2 rounded-full bg-slate-950 overflow-hidden border border-slate-800 mb-2">
+                <div id="oki-retail-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span>Pozostało w podlimicie detalicznym:</span>
+                <strong id="oki-retail-rem-text" class="text-emerald-400 font-mono-numbers">25 000 zł</strong>
+              </div>
+            </div>
+
+            <!-- Interactive Inputs to Update Saved Deposits -->
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Wpłacono łącznie (PLN):</label>
+                <input type="number" id="oki-input-total" min="0" max="100000" step="500" placeholder="np. 15000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">W obligacjach detal. (PLN):</label>
+                <input type="number" id="oki-input-retail" min="0" max="25000" step="500" placeholder="np. 5000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
           </div>
 
-          <div class="mt-4 pt-3 border-t border-slate-800/80 bg-indigo-950/20 p-3 rounded-lg border border-indigo-500/20">
-            <div class="text-[11px] font-bold text-indigo-300 uppercase tracking-wider mb-1">
-              💡 Strategiczna rada optymalizacyjna
-            </div>
-            <p class="text-[11px] text-slate-300 leading-relaxed">
-              Wypełnij podlimit 25 000 zł detalicznymi obligacjami antyinflacyjnymi (COI) lub 3-letnimi (TOS). Pozostałe 75 000 zł ulokuj w notowanym na GPW funduszu Beta ETF S&P 500 PLN-Hedged (ETFBSPXPL) oraz hurtowym ETF-ie obligacji skarbowych TBSP. Uzyskujesz maksymalną ochronę kapitału i zerowy podatek Belki w 100% w PLN!
-            </p>
+          <div class="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 leading-relaxed space-y-1">
+            <p>💡 <strong class="text-slate-300">Zasada OKI:</strong> Maks. 25 000 zł w obligacjach detalicznych (COI/TOS). Min. 75 000 zł w notowanych na GPW instrumentach w PLN (Beta ETF S&P 500 PLN, TBSP, WIG20TR).</p>
+            <p class="text-[10px] text-slate-500">Wprowadzone kwoty zapisują się automatycznie w pamięci przeglądarki.</p>
           </div>
         </div>
 

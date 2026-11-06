@@ -23,12 +23,12 @@ module.exports = {
     adminPassword: process.env.ADMIN_PASSWORD || '',
   },
 
-  // Automated Email Backup configuration
+  // Automated Email Backup configuration (SQLite .db export)
   emailBackup: {
     enabled: process.env.EMAIL_BACKUP_ENABLED === 'true',
     schedule: process.env.EMAIL_BACKUP_SCHEDULE || '0 3 * * 0', // Every Sunday at 03:00 Europe/Warsaw
-    to: process.env.BACKUP_EMAIL_TO || '',
-    from: process.env.EMAIL_BACKUP_FROM || '"Macro Radar Backup" <backup@macro-radar.local>',
+    to: process.env.BACKUP_EMAIL_TO || 'xd333r@gmail.com',
+    from: process.env.EMAIL_BACKUP_FROM || '"Poland Macro Crisis Radar" <backup@macro-radar.local>',
     smtp: {
       host: process.env.SMTP_HOST || '',
       port: parseInt(process.env.SMTP_PORT, 10) || 587,
@@ -36,6 +36,22 @@ module.exports = {
       user: process.env.SMTP_USER || '',
       pass: process.env.SMTP_PASS || '',
     }
+  },
+
+  // Daily Market HTML Email Digest configuration
+  emailDigest: {
+    enabled: process.env.EMAIL_DIGEST_ENABLED !== 'false',
+    schedule: process.env.EMAIL_DIGEST_SCHEDULE || '35 18 * * 1-5', // Mon-Fri at 18:35 Europe/Warsaw
+    to: process.env.EMAIL_DIGEST_TO || 'xd333r@gmail.com',
+    from: process.env.EMAIL_DIGEST_FROM || '"Poland Macro Crisis Radar" <radar@macro-radar.local>',
+  },
+
+  // ntfy.sh Instant Push Notifications configuration
+  ntfy: {
+    enabled: process.env.NTFY_ENABLED !== 'false',
+    server: process.env.NTFY_SERVER || 'https://ntfy.sh',
+    topic: process.env.NTFY_TOPIC || 'radar-makro-pl-xd333r',
+    clickUrl: process.env.APP_URL || 'https://watch.mikrus.dev',
   },
 
   fetcher: {

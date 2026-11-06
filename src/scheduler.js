@@ -4,6 +4,7 @@ const fetcher = require('./fetcher');
 const analyzer = require('./analyzer');
 const db = require('./db');
 const mailer = require('./mailer');
+const notifier = require('./notifier');
 
 let isUpdating = false;
 
@@ -25,6 +26,11 @@ async function runUpdate() {
     const latestReading = analyzer.processLatestReading(indicators);
 
     db.upsertReading(latestReading);
+
+    // Dispatch push and email notifications asynchronously
+    notifier.dispatchSessionNotifications(latestReading).catch(err => {
+      console.warn('[Scheduler] Session notifications error:', err.message);
+    });
 
     const elapsed = Date.now() - startTime;
     console.log(`[Scheduler] Successfully refreshed and saved reading for ${latestReading.timestamp} (Score: ${latestReading.risk_score}, Status: ${latestReading.status}) in ${elapsed}ms`);

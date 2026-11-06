@@ -173,6 +173,7 @@ async function loadDashboard() {
     const allocRec = state.latest?.conclusions?.portfolio_recommendation || 
       (await fetch('/api/allocation', { headers }).then(r => r.ok ? r.json() : null).catch(() => null));
     renderAllocationSection(allocRec);
+    renderFundamentalValuation(state.latest?.conclusions?.fundamental_valuation);
     renderKpiCards(state.latest);
     renderWarnings(state.latest.warnings || []);
     renderNewsSection(state.news);
@@ -529,6 +530,128 @@ function renderAllocationSection(rec) {
   const inputEl = document.getElementById('calc-amount-input');
   const initialAmount = inputEl ? parseFloat(inputEl.value) || 1500 : 1500;
   calculateAndRenderContribution(initialAmount);
+}
+
+/**
+ * Render Fundamental Valuation & Equity Risk Premium (Model Fed ERP)
+ */
+function renderFundamentalValuation(val) {
+  const v = val || {
+    wigPe: 10.4,
+    wigPbv: 1.15,
+    dividendYield: 4.60,
+    earningsYield: 9.62,
+    pl10yYield: 5.65,
+    equityRiskPremium: 3.97,
+    erpStance: 'BARDZO ATRAKCYJNA',
+    erpColor: 'emerald',
+    erpAdvice: 'Wyceny akcji na GPW zapewniają wysoką premię za ryzyko ponad bezpieczne obligacje skarbowe 10Y. Sprzyja długoterminowej akumulacji akcji w OKI.',
+    nbpRate: 5.75,
+    cpiInflation: 4.90,
+    realRate: 0.85,
+  };
+
+  const peEl = document.getElementById('val-pe-wig');
+  const eyEl = document.getElementById('val-ey-wig');
+  const pl10yEl = document.getElementById('val-pl10y');
+  const realRateEl = document.getElementById('val-real-rate');
+  const badgeEl = document.getElementById('erp-stance-badge');
+  const adviceEl = document.getElementById('erp-advice-text');
+
+  if (peEl) peEl.textContent = `${v.wigPe != null ? v.wigPe.toFixed(1) : '10.4'}x`;
+  if (eyEl) eyEl.textContent = `${v.earningsYield != null ? v.earningsYield.toFixed(2) : '9.62'}%`;
+  if (pl10yEl) pl10yEl.textContent = `${v.pl10yYield != null ? v.pl10yYield.toFixed(2) : '5.65'}%`;
+  if (realRateEl) {
+    const r = v.realRate != null ? v.realRate : 0.85;
+    realRateEl.textContent = `${r >= 0 ? '+' : ''}${r.toFixed(2)}%`;
+    realRateEl.className = r >= 0 ? 'text-emerald-400 font-mono-numbers text-sm sm:text-base' : 'text-rose-400 font-mono-numbers text-sm sm:text-base';
+  }
+
+  if (badgeEl) {
+    const erp = v.equityRiskPremium != null ? v.equityRiskPremium : 3.97;
+    const sign = erp >= 0 ? '+' : '';
+    badgeEl.textContent = `ERP: ${sign}${erp.toFixed(2)} pp (${v.erpStance || 'ATRAKCYJNA'})`;
+    if (erp >= 3.5) {
+      badgeEl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold font-mono-numbers bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0';
+    } else if (erp >= 1.5) {
+      badgeEl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold font-mono-numbers bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0';
+    } else if (erp >= 0) {
+      badgeEl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold font-mono-numbers bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0';
+    } else {
+      badgeEl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold font-mono-numbers bg-rose-500/10 text-rose-400 border border-rose-500/20 shrink-0';
+    }
+  }
+
+  if (adviceEl && v.erpAdvice) {
+    adviceEl.textContent = v.erpAdvice;
+  }
+}
+
+/**
+ * Initialize and sync Interactive OKI Limits Tracker (100k & 25k limits)
+ */
+function initOkiTracker() {
+  const inputTotal = document.getElementById('oki-input-total');
+  const inputRetail = document.getElementById('oki-input-retail');
+
+  const savedTotal = parseFloat(localStorage.getItem('oki_tracker_total')) || 0;
+  const savedRetail = parseFloat(localStorage.getItem('oki_tracker_retail')) || 0;
+
+  if (inputTotal) inputTotal.value = savedTotal > 0 ? savedTotal : '';
+  if (inputRetail) inputRetail.value = savedRetail > 0 ? savedRetail : '';
+
+  updateOkiTracker(savedTotal, savedRetail);
+
+  const handleUpdate = () => {
+    const valTotal = Math.max(0, parseFloat(inputTotal?.value) || 0);
+    const valRetail = Math.max(0, parseFloat(inputRetail?.value) || 0);
+    localStorage.setItem('oki_tracker_total', valTotal);
+    localStorage.setItem('oki_tracker_retail', valRetail);
+    updateOkiTracker(valTotal, valRetail);
+  };
+
+  if (inputTotal) {
+    inputTotal.addEventListener('input', handleUpdate);
+    inputTotal.addEventListener('change', handleUpdate);
+  }
+  if (inputRetail) {
+    inputRetail.addEventListener('input', handleUpdate);
+    inputRetail.addEventListener('change', handleUpdate);
+  }
+}
+
+function updateOkiTracker(depositedTotal, depositedRetail) {
+  const TOTAL_LIMIT = 100000;
+  const RETAIL_SUBLIMIT = 25000;
+
+  const totalUsed = Math.min(TOTAL_LIMIT, Math.max(0, depositedTotal || 0));
+  const retailUsed = Math.min(RETAIL_SUBLIMIT, Math.max(0, depositedRetail || 0));
+
+  const totalPct = Math.min(100, Math.round((totalUsed / TOTAL_LIMIT) * 100));
+  const retailPct = Math.min(100, Math.round((retailUsed / RETAIL_SUBLIMIT) * 100));
+
+  const totalRem = Math.max(0, TOTAL_LIMIT - totalUsed);
+  const retailRem = Math.max(0, RETAIL_SUBLIMIT - retailUsed);
+
+  const totalUsedText = document.getElementById('oki-total-used-text');
+  const totalPctText = document.getElementById('oki-total-pct');
+  const totalBar = document.getElementById('oki-total-bar');
+  const totalRemText = document.getElementById('oki-total-rem-text');
+
+  if (totalUsedText) totalUsedText.textContent = totalUsed.toLocaleString('pl-PL');
+  if (totalPctText) totalPctText.textContent = `${totalPct}%`;
+  if (totalBar) totalBar.style.width = `${totalPct}%`;
+  if (totalRemText) totalRemText.textContent = `${totalRem.toLocaleString('pl-PL')} zł`;
+
+  const retailUsedText = document.getElementById('oki-retail-used-text');
+  const retailPctText = document.getElementById('oki-retail-pct');
+  const retailBar = document.getElementById('oki-retail-bar');
+  const retailRemText = document.getElementById('oki-retail-rem-text');
+
+  if (retailUsedText) retailUsedText.textContent = retailUsed.toLocaleString('pl-PL');
+  if (retailPctText) retailPctText.textContent = `${retailPct}%`;
+  if (retailBar) retailBar.style.width = `${retailPct}%`;
+  if (retailRemText) retailRemText.textContent = `${retailRem.toLocaleString('pl-PL')} zł`;
 }
 
 /**
@@ -1085,6 +1208,26 @@ async function loadAdminStats() {
         emailInput.value = stats.emailBackupTo;
       }
     }
+
+    const ntfyBadge = document.getElementById('ntfy-status-badge');
+    const ntfyLink = document.getElementById('ntfy-topic-link');
+    if (stats.ntfyTopic) {
+      if (ntfyLink) {
+        ntfyLink.textContent = stats.ntfyTopic;
+        ntfyLink.href = stats.ntfyUrl || `https://ntfy.sh/${stats.ntfyTopic}`;
+      }
+      if (ntfyBadge) {
+        ntfyBadge.textContent = 'ntfy.sh Aktywne';
+        ntfyBadge.className = 'text-[10px] px-2 py-0.5 rounded border text-emerald-400 border-emerald-500/30 bg-emerald-500/10 shrink-0';
+      }
+    }
+
+    const emailDigestBadge = document.getElementById('email-digest-badge');
+    const testEmailInput = document.getElementById('test-email-digest-input');
+    if (stats.emailDigestTo) {
+      if (emailDigestBadge) emailDigestBadge.textContent = stats.emailDigestTo;
+      if (testEmailInput && !testEmailInput.value) testEmailInput.value = stats.emailDigestTo;
+    }
   } catch (err) {
     console.error('Błąd pobierania statystyk bazy:', err);
   }
@@ -1309,8 +1452,72 @@ async function handleRunBackfill() {
   }
 }
 
+async function handleTestNtfy() {
+  if (!state.adminToken) return;
+  const btn = document.getElementById('btn-test-ntfy');
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+  }
+
+  try {
+    const res = await fetch('/api/admin/notify/ntfy-test', {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    showToast('Powiadomienie testowe ntfy.sh zostało wysłane na Twój kanał!', 'success');
+  } catch (err) {
+    showToast(`Błąd wysyłki ntfy: ${err.message}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+    }
+  }
+}
+
+async function handleTestEmailDigest() {
+  if (!state.adminToken) return;
+  const btn = document.getElementById('btn-test-email-digest');
+  const emailInput = document.getElementById('test-email-digest-input');
+  const recipientEmail = emailInput ? emailInput.value.trim() : '';
+
+  if (!recipientEmail) {
+    showToast('Podaj adres e-mail odbiorcy raportu.', 'error');
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+  }
+
+  try {
+    const res = await fetch('/api/admin/notify/email-test', {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ recipientEmail })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+    showToast(`Raport HTML został pomyślnie wysłany na adres: ${recipientEmail}`, 'success');
+  } catch (err) {
+    showToast(`Błąd wysyłki e-mail: ${err.message}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+    }
+  }
+}
+
 // Initial Setup
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize OKI Tracker
+  initOkiTracker();
+
   // Gate login form & header logout
   const gateLoginForm = document.getElementById('gate-login-form');
   if (gateLoginForm) gateLoginForm.addEventListener('submit', handleGateLogin);
@@ -1343,6 +1550,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const runBackfillBtn = document.getElementById('btn-run-backfill');
   if (runBackfillBtn) runBackfillBtn.addEventListener('click', handleRunBackfill);
+
+  const testNtfyBtn = document.getElementById('btn-test-ntfy');
+  if (testNtfyBtn) testNtfyBtn.addEventListener('click', handleTestNtfy);
+
+  const testEmailBtn = document.getElementById('btn-test-email-digest');
+  if (testEmailBtn) testEmailBtn.addEventListener('click', handleTestEmailDigest);
 
   // Close modal when clicking outside
   const modal = document.getElementById('admin-modal');

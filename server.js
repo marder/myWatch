@@ -9,6 +9,7 @@ const allocator = require('./src/allocator');
 const scheduler = require('./src/scheduler');
 const auth = require('./src/auth');
 const mailer = require('./src/mailer');
+const notifier = require('./src/notifier');
 
 const app = express();
 const startTime = Date.now();
@@ -149,8 +150,57 @@ app.post('/api/admin/db/backfill', auth.requireAuth, async (req, res) => {
 });
 
 /**
+ * POST /api/admin/notify/ntfy-test
+ * Sends a test push notification via ntfy.sh
+ */
+app.post('/api/admin/notify/ntfy-test', auth.requireAuth, async (req, res) => {
+  try {
+    const latest = db.getLatestReading();
+    const status = latest?.status || 'STABILNY';
+    const score = latest?.risk_score != null ? latest.risk_score : 15;
+    const result = await notifier.sendNtfyNotification({
+      title: `[Test] Poland Macro Radar: ${status} (${score}/100)`,
+      message: `Test powiadomienia push ntfy.sh zakończony pomyślnie! Serwer działa prawidłowo.`,
+      priority: 'default',
+      tags: 'white_check_mark,bell',
+    });
+    res.json({ success: true, message: 'Powiadomienie testowe ntfy.sh zostało wysłane!', details: result });
+  } catch (err) {
+    console.error('Error in /api/admin/notify/ntfy-test:', err);
+    res.status(500).json({ error: 'Błąd wysyłki powiadomienia testowego ntfy.sh', message: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/notify/email-test
+ * Sends a test daily market HTML email digest
+ * Body: { recipientEmail? }
+ */
+app.post('/api/admin/notify/email-test', auth.requireAuth, async (req, res) => {
+  try {
+    const { recipientEmail } = req.body || {};
+    const latest = db.getLatestReading();
+    if (!latest) {
+      return res.status(404).json({ error: 'Brak danych w bazie do wygenerowania raportu.' });
+    }
+    const result = await notifier.sendDailyDigestEmail(latest, recipientEmail);
+    res.json({
+      success: true,
+      message: `Raport testowy został wysłany na e-mail: ${result.recipient}`,
+      details: result,
+    });
+  } catch (err) {
+    console.error('Error in /api/admin/notify/email-test:', err);
+    res.status(500).json({
+      error: 'Błąd podczas wysyłki raportu testowego na e-mail',
+      message: err.message,
+    });
+  }
+});
+
+/**
  * GET /api/admin/db/stats
- * Detailed database and backup status
+ * Detailed database, backup, and notifications status
  */
 app.get('/api/admin/db/stats', auth.requireAuth, (req, res) => {
   try {
@@ -167,9 +217,14 @@ app.get('/api/admin/db/stats', auth.requireAuth, (req, res) => {
       recordsCount: info.count,
       oldestTimestamp: info.oldest,
       latestTimestamp: info.latest,
-      smtpConfigured: Boolean(config.emailBackup.smtp?.host && config.emailBackup.to),
+      smtpConfigured: Boolean(config.emailBackup.smtp?.host),
       emailBackupTo: config.emailBackup.to || null,
       emailBackupSchedule: config.emailBackup.schedule,
+      emailDigestEnabled: Boolean(config.emailDigest?.enabled),
+      emailDigestTo: config.emailDigest?.to || null,
+      ntfyConfigured: Boolean(config.ntfy?.enabled && config.ntfy?.topic),
+      ntfyTopic: config.ntfy?.topic || null,
+      ntfyUrl: `${config.ntfy?.server?.replace(/\/+$/, '')}/${config.ntfy?.topic}`,
     });
   } catch (err) {
     res.status(500).json({ error: 'Błąd pobierania statystyk bazy', message: err.message });
@@ -193,6 +248,28 @@ app.get('/api/latest', auth.requireAuth, (req, res) => {
     // Ensure portfolio_recommendation is always present even on legacy records
     if (latest.conclusions && !latest.conclusions.portfolio_recommendation) {
       latest.conclusions.portfolio_recommendation = allocator.getFullPortfolioRecommendation(latest.risk_score, latest);
+    }
+    // Ensure fundamental valuation & ERP are always present
+    if (latest.conclusions && !latest.conclusions.fundamental_valuation) {
+      const pl10yYield = latest.pl10y != null ? latest.pl10y : 5.65;
+      const wigPe = 10.4;
+      const earningsYield = Math.round((100 / wigPe) * 100) / 100;
+      const equityRiskPremium = Math.round((earningsYield - pl10yYield) * 100) / 100;
+      latest.conclusions.fundamental_valuation = {
+        wigPe,
+        wigPbv: 1.15,
+        dividendYield: 4.60,
+        earningsYield,
+        pl10yYield,
+        equityRiskPremium,
+        erpStance: equityRiskPremium >= 3.5 ? 'BARDZO ATRAKCYJNA' : 'ATRAKCYJNA',
+        erpColor: 'emerald',
+        erpAdvice: 'Wyceny akcji na GPW zapewniają wysoką premię za ryzyko ponad bezpieczne obligacje skarbowe 10Y. Sprzyja długoterminowej akumulacji akcji w OKI.',
+        nbpRate: 5.75,
+        cpiInflation: 4.90,
+        realRate: 0.85,
+        realRateStance: 'DODATNIA (DEFENSYWNA)',
+      };
     }
     // Ensure raw string properties are purged from response payload
     delete latest.warnings_json;
