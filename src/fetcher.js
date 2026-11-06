@@ -1,21 +1,58 @@
 const config = require('../config');
 const fs = require('fs');
 const path = require('path');
+const db = require('./db');
+
+const SEED_PATH = path.resolve(__dirname, 'seed_data.json');
 
 // Load fallback seed data in case external APIs are temporarily unreachable
 let seedData = null;
 function getSeedData() {
   if (!seedData) {
-    const seedPath = path.resolve(__dirname, 'seed_data.json');
-    if (fs.existsSync(seedPath)) {
+    if (fs.existsSync(SEED_PATH)) {
       try {
-        seedData = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+        seedData = JSON.parse(fs.readFileSync(SEED_PATH, 'utf8'));
       } catch (e) {
         console.error('[Fetcher] Error loading seed_data.json:', e.message);
       }
     }
   }
   return seedData;
+}
+
+/**
+ * Persist updated indicator series back to seed_data.json (rolling 500-session window)
+ * so future restarts never suffer from a historical gap after 2026-11-05.
+ */
+function persistRollingSeedBaseline(indicators) {
+  try {
+    const currentSeed = getSeedData() || {};
+    const lastSeedWigDate = currentSeed.wig?.[currentSeed.wig.length - 1]?.date;
+    const latestWigDate = indicators.wig?.[indicators.wig.length - 1]?.date;
+
+    if (!latestWigDate || latestWigDate === lastSeedWigDate) {
+      return; // Already up to date
+    }
+
+    const updatedSeed = {
+      '10ply.b': (indicators.pl10y || []).slice(-500),
+      '02ply.b': (indicators.pl2y || []).slice(-500),
+      '10dey.b': (indicators.de10y || []).slice(-500),
+      'wig': (indicators.wig || []).slice(-500),
+      'wig20': (indicators.wig20 || []).slice(-500),
+      'mwig40': (indicators.mwig40 || []).slice(-500),
+      'swig80': (indicators.swig80 || []).slice(-500),
+      'wig_banki': (indicators.wig_banki || []).slice(-500),
+      'usd': (indicators.usd || []).slice(-500),
+      'eur': (indicators.eur || []).slice(-500),
+    };
+
+    seedData = updatedSeed;
+    fs.writeFileSync(SEED_PATH, JSON.stringify(updatedSeed, null, 2), 'utf8');
+    console.log(`[Fetcher] Updated rolling seed baseline through ${latestWigDate}.`);
+  } catch (err) {
+    console.warn('[Fetcher] Could not persist rolling seed baseline:', err.message);
+  }
 }
 
 // In-memory cache for economic news
@@ -41,15 +78,15 @@ function sanitizeEquityQuote(name, close) {
       return Math.round((close / 1.85) * 100) / 100;
     }
   } else if (key.includes('wig20') || key === 'gpw:wig20' || key === 'wig20.wa' || key === '^wig20') {
-    if (close > 3000) {
+    if (close > 3500) {
       return Math.round((close / 1.75) * 100) / 100;
     }
   } else if (key.includes('mwig40') || key === 'gpw:mwig40' || key === 'mwig40.wa' || key === '^mwig40') {
-    if (close > 8000) {
+    if (close > 8500) {
       return Math.round((close / 1.70) * 100) / 100;
     }
   } else if (key.includes('swig80') || key === 'gpw:swig80' || key === 'swig80.wa' || key === '^swig80') {
-    if (close > 25000) {
+    if (close > 26500) {
       return Math.round((close / 1.25) * 100) / 100;
     }
   } else if (key.includes('banki') || key === 'gpw:wig_banki') {
@@ -237,7 +274,7 @@ async function fetchStooqSeries(symbol, limit = 300) {
 
   const url = `${config.fetcher.stooqBaseUrl}${encodeURIComponent(symbol)}&i=d`;
   try {
-    const response = await fetchWithRetry(url);
+    const response = await fetchWithRetry(url, {}, 0);
     const text = await response.text();
     const parsed = parseStooqCsv(text, symbol);
     if (parsed.length === 0) {
@@ -245,11 +282,11 @@ async function fetchStooqSeries(symbol, limit = 300) {
     }
     return parsed.slice(-limit);
   } catch (err) {
-    if (err.message.includes('403')) {
+    if (err.message.includes('403') || err.message.includes('fetch failed')) {
       stooqBlocked = true;
       if (!stooqWarningLogged) {
         stooqWarningLogged = true;
-        console.warn(`[Fetcher] Stooq.pl returned HTTP 403 Forbidden (datacenter IP restriction). Switching seamlessly to Yahoo Finance, TradingView & verified market baseline.`);
+        console.warn(`[Fetcher] Stooq.pl bulk CSV unavailable (${err.message}). Switching seamlessly to Yahoo Finance, TradingView & verified rolling baseline.`);
       }
     } else {
       console.warn(`[Fetcher] Stooq fetch notice for '${symbol}': ${err.message}. Using baseline.`);
@@ -445,14 +482,72 @@ async function fetchEconomicNews() {
  * - Stooq single-quote & TradingView Scanner (Polish & German Bond Yields)
  * - Safe forward-fill from verified baseline/cache (Strict Kill-switch on synthetic drift)
  */
+/**
+ * Reconstruct missing intermediate GPW sessions using full 1-year Yahoo Finance ETF history
+ * (ETFBW20TR.WA / ETFBM40TR.WA) when Stooq bulk CSV is blocked on VPS and WIG.WA only returns 1 session.
+ */
+function bridgeEquityGapWithEtf(indexSeries, etfSeries, indexName) {
+  if (!Array.isArray(indexSeries) || indexSeries.length < 2 || !Array.isArray(etfSeries) || etfSeries.length < 5) {
+    return indexSeries;
+  }
+
+  const indexMap = new Map(indexSeries.map(item => [item.date, item.close]));
+  const etfMap = new Map(etfSeries.map(item => [item.date, item.close]));
+  const sortedIndexDates = Array.from(indexMap.keys()).sort();
+
+  // Check if there is any multi-day gap near the tail where ETF has intermediate trading dates
+  const secondLastDate = sortedIndexDates[sortedIndexDates.length - 2];
+  const lastDate = sortedIndexDates[sortedIndexDates.length - 1];
+  const missingEtfDates = etfSeries
+    .map(item => item.date)
+    .filter(d => d > secondLastDate && d < lastDate && !indexMap.has(d));
+
+  if (missingEtfDates.length === 0) {
+    return indexSeries;
+  }
+
+  // Forward-chain from secondLastDate using daily ETF percentage changes
+  let prevClose = indexMap.get(secondLastDate);
+  let prevEtf = etfMap.get(secondLastDate);
+
+  for (const date of missingEtfDates) {
+    const currEtf = etfMap.get(date);
+    if (prevEtf && currEtf && prevClose) {
+      const dailyReturn = (currEtf - prevEtf) / prevEtf;
+      prevClose = sanitizeEquityQuote(indexName, prevClose * (1 + dailyReturn));
+      indexMap.set(date, prevClose);
+      prevEtf = currEtf;
+    }
+  }
+
+  return Array.from(indexMap.entries())
+    .map(([date, close]) => ({ date, close }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * Multi-source Resilient Fetcher for Macroeconomic & Market Indicators:
+ * - Yahoo Finance API (Primary for Equities and GPW ETF Benchmarks)
+ * - NBP REST API (Currencies USD, EUR)
+ * - Stooq single-quote & TradingView Scanner (Polish & German Bond Yields)
+ * - Safe forward-fill from SQLite & verified rolling baseline (Strict Kill-switch on synthetic drift)
+ */
 async function fetchAllIndicators() {
   console.log('[Fetcher] Fetching macroeconomic & market data...');
 
   const historyDays = config.wigHistoryDays || 460;
 
+  // Read existing SQLite history so any previously recorded readings are preserved
+  let dbHistory = [];
+  try {
+    dbHistory = db.getHistory(300) || [];
+  } catch (e) {
+    // Database may not be initialized yet
+  }
+
   // Concurrently query:
   // 1. NBP REST API (USD, EUR)
-  // 2. Yahoo Finance API (WIG, WIG20, mWIG40, sWIG80, ^TNX)
+  // 2. Yahoo Finance API (WIG, WIG20, mWIG40, sWIG80 + full-history GPW ETFs ETFBW20TR.WA, ETFBM40TR.WA)
   // 3. Stooq single-quote endpoints (PL10Y, PL2Y, DE10Y)
   // 4. TradingView Live Scanner
   // 5. Stooq historical fallback series
@@ -463,7 +558,8 @@ async function fetchAllIndicators() {
     yahooWig20Res,
     yahooMwig40Res,
     yahooSwig80Res,
-    yahooTnxRes,
+    yahooEtfW20Res,
+    yahooEtfM40Res,
     stooqPl10ySingleRes,
     stooqPl2ySingleRes,
     stooqDe10ySingleRes,
@@ -483,7 +579,8 @@ async function fetchAllIndicators() {
     fetchYahooSeries('WIG20.WA', '1y'),
     fetchYahooSeries('MWIG40.WA', '1y'),
     fetchYahooSeries('SWIG80.WA', '1y'),
-    fetchYahooSeries('^TNX', '1y'),
+    fetchYahooSeries('ETFBW20TR.WA', '1y'),
+    fetchYahooSeries('ETFBM40TR.WA', '1y'),
     fetchStooqSingleQuote(config.fetcher.stooqSymbols.pl10y),
     fetchStooqSingleQuote(config.fetcher.stooqSymbols.pl2y),
     fetchStooqSingleQuote(config.fetcher.stooqSymbols.de10y),
@@ -498,7 +595,7 @@ async function fetchAllIndicators() {
     fetchStooqSeries(config.fetcher.stooqSymbols.wig_banki, historyDays),
   ]);
 
-  const extract = (name, primaryYahooRes, secondaryStooqRes) => {
+  const extract = (name, primaryYahooRes, secondaryStooqRes, dbField = null) => {
     const seed = getSeedData();
     const seedSeries = (seed && seed[name]) ? [...seed[name]] : [];
     const map = new Map();
@@ -508,14 +605,23 @@ async function fetchAllIndicators() {
       map.set(item.date, sanitizeEquityQuote(name, item.close));
     });
 
-    // 2. Overlay secondary Stooq series if fulfilled and valid
+    // 2. Merge existing SQLite records if available
+    if (dbField && dbHistory.length > 0) {
+      dbHistory.forEach(row => {
+        if (row.timestamp && row[dbField] != null && !isNaN(row[dbField])) {
+          map.set(row.timestamp, sanitizeEquityQuote(name, row[dbField]));
+        }
+      });
+    }
+
+    // 3. Overlay secondary Stooq series if fulfilled and valid
     if (secondaryStooqRes && secondaryStooqRes.status === 'fulfilled' && Array.isArray(secondaryStooqRes.value)) {
       secondaryStooqRes.value.forEach(item => {
         map.set(item.date, sanitizeEquityQuote(name, item.close));
       });
     }
 
-    // 3. Overlay primary Yahoo series if fulfilled and valid
+    // 4. Overlay primary Yahoo series if fulfilled and valid
     if (primaryYahooRes && primaryYahooRes.status === 'fulfilled' && Array.isArray(primaryYahooRes.value)) {
       primaryYahooRes.value.forEach(item => {
         map.set(item.date, sanitizeEquityQuote(name, item.close));
@@ -528,12 +634,12 @@ async function fetchAllIndicators() {
   };
 
   const indicators = {
-    usd: extract('usd', null, usdRes),
-    eur: extract('eur', null, eurRes),
-    pl10y: extract(config.fetcher.stooqSymbols.pl10y, null, stooqPl10yRes),
-    pl2y: extract(config.fetcher.stooqSymbols.pl2y, null, stooqPl2yRes),
-    de10y: extract(config.fetcher.stooqSymbols.de10y, null, stooqDe10yRes),
-    wig: extract(config.fetcher.stooqSymbols.wig, yahooWigRes, stooqWigRes),
+    usd: extract('usd', null, usdRes, 'usd_pln'),
+    eur: extract('eur', null, eurRes, 'eur_pln'),
+    pl10y: extract(config.fetcher.stooqSymbols.pl10y, null, stooqPl10yRes, 'pl10y'),
+    pl2y: extract(config.fetcher.stooqSymbols.pl2y, null, stooqPl2yRes, 'pl2y'),
+    de10y: extract(config.fetcher.stooqSymbols.de10y, null, stooqDe10yRes, 'de10y'),
+    wig: extract(config.fetcher.stooqSymbols.wig, yahooWigRes, stooqWigRes, 'wig'),
     wig20: extract(config.fetcher.stooqSymbols.wig20, yahooWig20Res, stooqWig20Res),
     mwig40: extract(config.fetcher.stooqSymbols.mwig40, yahooMwig40Res, stooqMwig40Res),
     swig80: extract(config.fetcher.stooqSymbols.swig80, yahooSwig80Res, stooqSwig80Res),
@@ -584,12 +690,27 @@ async function fetchAllIndicators() {
     console.log(`[Fetcher] Live market quotes active via TradingView/Yahoo for ${todayDate} (PL10Y: ${indicators.pl10y[indicators.pl10y.length - 1]?.close}%, Bund: ${indicators.de10y[indicators.de10y.length - 1]?.close}%, WIG: ${indicators.wig[indicators.wig.length - 1]?.close}, WIG20: ${indicators.wig20[indicators.wig20.length - 1]?.close})`);
   }
 
+  // Bridge any multi-day historical gaps using 251-day Yahoo Finance GPW ETF series
+  const etfW20 = yahooEtfW20Res.status === 'fulfilled' ? yahooEtfW20Res.value : [];
+  const etfM40 = yahooEtfM40Res.status === 'fulfilled' ? yahooEtfM40Res.value : [];
+  if (etfW20.length > 0) {
+    indicators.wig = bridgeEquityGapWithEtf(indicators.wig, etfW20, 'wig');
+    indicators.wig20 = bridgeEquityGapWithEtf(indicators.wig20, etfW20, 'wig20');
+  }
+  if (etfM40.length > 0) {
+    indicators.mwig40 = bridgeEquityGapWithEtf(indicators.mwig40, etfM40, 'mwig40');
+    indicators.swig80 = bridgeEquityGapWithEtf(indicators.swig80, etfM40, 'swig80');
+  }
+
   // Final verification: ensure WIG is within realistic parameters and never > 120,000
   indicators.wig.forEach(item => {
     if (item.close > 120000) {
       item.close = Math.round((item.close / 1.85) * 100) / 100;
     }
   });
+
+  // Automatically persist new verified daily readings into seed_data.json
+  persistRollingSeedBaseline(indicators);
 
   return indicators;
 }
@@ -605,4 +726,5 @@ module.exports = {
   fetchEconomicNews,
   fetchAllIndicators,
   sanitizeEquityQuote,
+  bridgeEquityGapWithEtf,
 };

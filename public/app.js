@@ -544,7 +544,7 @@ async function calculateAndRenderContribution(amountPln) {
           note: 'Zasil konto oszczędnościowe lub zachowaj bufor',
         }
       ],
-      okiAdvice: 'W koncie OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe 75 tys. zł podziel na ETF All-World oraz ETF na polskie obligacje skarbowe TBSP na giełdzie.'
+      okiAdvice: 'W koncie OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe min. 75 tys. zł ulokuj w notowanym na GPW w PLN funduszu Beta ETF S&P 500 PLN-Hedged (ETFBSPXPL.PL) oraz hurtowym ETF-ie obligacji skarbowych TBSP na giełdzie (ETFBSTBSP.PL).'
     };
     renderCalculationResults(fallbackData);
   }

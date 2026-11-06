@@ -95,13 +95,15 @@ module.exports = {
       criticalEurChg: 4.5,
       elevatedUsdChg: 4.0,
       elevatedEurChg: 2.5,
-      mildUsdChg: 2.0
+      mildUsdChg: 2.0,
+      mildEurChg: 1.5
     },
     pillar4_equities: {
       maxPoints: 20,
       bearSmaDiff: -12.0,
       weakSmaDiff: -3.0,
-      correction20d: -8.0
+      correction20d: -8.0,
+      banksCorrection20d: -10.0
     },
     statusBands: [
       { min: 76, max: 100, label: 'ALARM KRYZYSOWY', color: 'rose' },

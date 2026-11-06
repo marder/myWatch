@@ -83,7 +83,10 @@ const INSTRUMENTS = {
 };
 
 /**
- * Determine dynamic asset weights based on Risk Score and macro parameters
+ * Determine dynamic asset weights based on Risk Score and macro parameters.
+ * Separates target weights for accumulated portfolio capital (Capital Preservation)
+ * from new monthly DCA contribution weights (Contrarian Accumulation).
+ * Strictly respects the 25,000 PLN (25%) OKI savings sublimit vs 75,000 PLN capital market portion.
  */
 function getTargetAllocationWeights(riskScore) {
   if (riskScore >= 76) {
@@ -97,11 +100,17 @@ function getTargetAllocationWeights(riskScore) {
         treasuryBonds: 65,
         cashAndGold: 25,
       },
-      bondsBreakdown: {
-        marketEtfTbsp: 30, // Płynne obligacje
-        retailInflationCoi: 35, // Antyinflacyjne EDO / COI
+      dcaWeights: {
+        globalEquities: 20,
+        polishEquities: 10,
+        treasuryBonds: 50,
+        cashAndGold: 20,
       },
-      actionSummary: 'Tryb w pełni defensywny. Wstrzymaj zakupy akcji polskich i ogranicz globalne ETF do minimum. Zwiększ udział bezpiecznych obligacji skarbowych i gotówki.'
+      bondsBreakdown: {
+        marketEtfTbsp: 45, // Giełdowy Beta ETF TBSP (w ramach min. 75k rynku kapitałowego OKI)
+        retailInflationCoi: 20, // Detaliczne COI/TOS (mieszczące się w podlimicie 25k zł OKI)
+      },
+      actionSummary: 'Tryb defensywny dla zgromadzonego majątku: chroń kapitał w obligacjach skarbowych (w OKI do 25 tys. zł w detalicznych COI/TOS, a nadwyżkę w giełdowym Beta ETF TBSP). Nowe miesięczne wpłaty DCA dziel ostrożnie, wykorzystując przeceny w małych transzach.'
     };
   }
 
@@ -116,11 +125,17 @@ function getTargetAllocationWeights(riskScore) {
         treasuryBonds: 55,
         cashAndGold: 15,
       },
-      bondsBreakdown: {
-        marketEtfTbsp: 30,
-        retailInflationCoi: 25,
+      dcaWeights: {
+        globalEquities: 30,
+        polishEquities: 10,
+        treasuryBonds: 45,
+        cashAndGold: 15,
       },
-      actionSummary: 'Na rynkach rośnie nerwowość. Przeważaj obligacje skarbowe, gromadź bufor gotówki i wstrzymaj się z jednorazowymi dużymi zakupami akcji.'
+      bondsBreakdown: {
+        marketEtfTbsp: 35, // Giełdowy ETF TBSP bez limitu 25k
+        retailInflationCoi: 20, // Detaliczne COI/TOS w ramach podlimitu 25k zł
+      },
+      actionSummary: 'Na rynkach rośnie nerwowość. Przeważaj obligacje skarbowe (pamiętając o limicie 25 tys. zł na część detaliczną w OKI – nadwyżkę kieruj w Beta ETF TBSP na GPW) i wstrzymaj się z jednorazowymi dużymi zakupami akcji.'
     };
   }
 
@@ -135,11 +150,17 @@ function getTargetAllocationWeights(riskScore) {
         treasuryBonds: 40,
         cashAndGold: 10,
       },
+      dcaWeights: {
+        globalEquities: 40,
+        polishEquities: 10,
+        treasuryBonds: 40,
+        cashAndGold: 10,
+      },
       bondsBreakdown: {
         marketEtfTbsp: 25,
         retailInflationCoi: 15,
       },
-      actionSummary: 'Umiarkowana zmienność. Realizuj systematyczne comiesięczne zakupy (DCA) w proporcji 50% akcje i 40% obligacje, zachowując 10% bufora.'
+      actionSummary: 'Umiarkowana zmienność. Realizuj systematyczne comiesięczne zakupy (DCA) w proporcji 50% akcje (w PLN na GPW) i 40% obligacje skarbowe, zachowując 10% bufora płynnościowego.'
     };
   }
 
@@ -153,11 +174,17 @@ function getTargetAllocationWeights(riskScore) {
       treasuryBonds: 30,
       cashAndGold: 5,
     },
+    dcaWeights: {
+      globalEquities: 50,
+      polishEquities: 15,
+      treasuryBonds: 30,
+      cashAndGold: 5,
+    },
     bondsBreakdown: {
       marketEtfTbsp: 20,
       retailInflationCoi: 10,
     },
-    actionSummary: 'Sprzyjające otoczenie makro. Bezpieczny moment na planowe, comiesięczne dopłaty do globalnego koszyka ETF i liderów GPW przy zachowaniu 30% w obligacjach.'
+    actionSummary: 'Sprzyjające otoczenie makro. Bezpieczny moment na planowe, comiesięczne dopłaty do globalnego koszyka ETF w PLN (ETFBSPXPL.PL) i liderów GPW przy zachowaniu 30% w obligacjach.'
   };
 }
 
@@ -166,6 +193,16 @@ function getTargetAllocationWeights(riskScore) {
  */
 function getFullPortfolioRecommendation(riskScore, latestReading = {}) {
   const allocation = getTargetAllocationWeights(riskScore);
+
+  const isCurveInverted = (latestReading.spread_10y_2y ?? 0) < -0.10;
+  const isBondSelloff = (latestReading.pl10y_20d_chg ?? 0) > 0.40;
+
+  let bondsActionAdvice = 'W OKI do 25 tys. zł użyj obligacji detalicznych TOS/COI, a powyżej 25 tys. zł kupuj giełdowy Beta ETF TBSP (ETFBSTBSP.PL), który nie podlega podlimitowi oszczędnościowemu.';
+  if (isBondSelloff) {
+    bondsActionAdvice = 'Uwaga na ryzyko stopy procentowej (wzrost rentowności 10Y): w pierwszej kolejności wypełnij podlimit 25 tys. zł obligacjami antyinflacyjnymi COI, a giełdowy Beta ETF TBSP dokupuj stopniowo małymi transzami.';
+  } else if (isCurveInverted) {
+    bondsActionAdvice = 'Krzywa dochodowości jest odwrócona: zablokuj wysoki stały kupon w 3-letnich obligacjach TOS (w podlimicie 25 tys. zł OKI) oraz w giełdowym Beta ETF TBSP (powyżej 25 tys. zł) przed obniżkami stóp NBP.';
+  }
 
   // Concrete instrument buckets
   const buckets = [
@@ -178,33 +215,31 @@ function getFullPortfolioRecommendation(riskScore, latestReading = {}) {
         ticker: 'inPZU FIO',
       },
       actionAdvice: riskScore > 50 
-        ? 'Kupuj wyłącznie w małych, regularnych transzach (DCA), nie rób dużych dopłat.' 
-        : 'Główny cel dopłat. Kupuj regularnie co miesiąc bez prób zgadywania dołka.',
+        ? 'Kupuj wyłącznie w małych, regularnych transzach (DCA), nie rób dużych jednorazowych dopłat.' 
+        : 'Główny motor wzrostu w OKI. Kupuj regularnie co miesiąc bez prób zgadywania dołka.',
     },
     {
       category: '2. Polskie Akcje GPW (Liderzy & Dywidendy)',
       weightPct: allocation.weights.polishEquities,
       instrument: latestReading.wig_sma200_diff < -3.0 ? INSTRUMENTS.polishEquitiesMwig40 : INSTRUMENTS.polishEquitiesWig20,
       actionAdvice: allocation.weights.polishEquities === 0
-        ? 'Wstrzymaj zakupy akcji polskich do czasu powrotu indeksu WIG powyżej średniej SMA200.'
-        : 'Inwestuj w wersje Total Return (TR) reinwestujące dywidendy.',
+        ? 'Dla zgromadzonego kapitału wstrzymaj duże zakupy; w nowych wpłatach DCA uśredniaj wyłącznie małymi transzami (do 10% wpłaty).'
+        : 'Inwestuj na GPW w wersje Total Return (TR) automatycznie reinwestujące dywidendy bez podatku Belki.',
     },
     {
       category: '3. Obligacje Skarbowe (Stabilizacja & Kupon)',
       weightPct: allocation.weights.treasuryBonds,
-      instrument: latestReading.spread_10y_2y < -0.10 ? INSTRUMENTS.retailBondsTos : INSTRUMENTS.treasuryBondsTfsp,
-      secondaryInstrument: INSTRUMENTS.retailBondsCoi,
-      actionAdvice: latestReading.spread_10y_2y < -0.10
-        ? 'Krzywa jest płaska/odwrócona. Zablokuj wysoki kupon w stałoprocentowych papierach (TOS / TBSP) przed obniżkami stóp.'
-        : 'W OKI do 25 tys. zł użyj obligacji detalicznych TOS/COI, powyżej 25 tys. zł kupuj Beta ETF TBSP na giełdzie.',
+      instrument: INSTRUMENTS.treasuryBondsTfsp,
+      secondaryInstrument: isCurveInverted ? INSTRUMENTS.retailBondsTos : INSTRUMENTS.retailBondsCoi,
+      actionAdvice: bondsActionAdvice,
     },
     {
       category: '4. Bezpieczna Płynność & Złoto',
       weightPct: allocation.weights.cashAndGold,
       instrument: riskScore >= 50 ? INSTRUMENTS.goldProtection : INSTRUMENTS.cashLiquidity,
       actionAdvice: riskScore >= 50
-        ? 'Trzymaj poduszkę płynnościową na koncie oszczędnościowym i rozważ 5-10% ekspozycji na złoto.'
-        : 'Trzymaj standardowy bufor płynności na nieprzewidziane wydatki.',
+        ? 'Utrzymuj poduszkę płynnościową na koncie BFG (w ramach podlimitu 25k w OKI) i rozważ 5-10% ekspozycji na złoto fizyczne poza OKI.'
+        : 'Trzymaj standardowy bufor płynności na okazje rynkowe i nieprzewidziane wydatki.',
     }
   ];
 
@@ -215,12 +250,12 @@ function getFullPortfolioRecommendation(riskScore, latestReading = {}) {
     capitalMarketMinPln: 75000,
     keyRules: [
       'Zwolnienie z podatku Belki (19%) do kwoty 100 000 zł łącznej wartości aktywów.',
-      'Sublimit 25 000 zł na bezpieczną część oszczędnościową (lokaty, obligacje detaliczne COI/TOS).',
-      'Pozostałe co najmniej 75 000 zł musi pracować na rynku kapitałowym (ETF-y akcyjne, obligacyjne TBSP na GPW, akcje w PLN).',
-      'Brak zamrożenia środków – zyski można wypłacić w dowolnej chwili bez utraty ulgi podatkowej.',
-      'Od nadwyżki ponad 100 000 zł naliczany jest nowy podatek od wartości aktywów.',
+      'Sublimit 25 000 zł na bezpieczną część oszczędnościową (lokaty + obligacje detaliczne COI/TOS łącznie).',
+      'Pozostałe co najmniej 75 000 zł musi pracować na rynku kapitałowym w PLN (ETF-y akcyjne i obligacyjne TBSP na GPW, akcje, FIO).',
+      'Brak zamrożenia środków – kapitał i zyski można wypłacić w dowolnej chwili bez utraty ulgi podatkowej.',
+      'Od nadwyżki ponad 100 000 zł naliczany jest niski podatek od wartości aktywów (ok. 0,8-0,9% rocznie).',
     ],
-    tacticalTip: 'W koncie OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe min. 75 tys. zł ulokuj w notowanym na GPW w PLN funduszu Beta ETF S&P 500 PLN-Hedged (ETFBSPXPL.PL) oraz hurtowym ETF-ie obligacji skarbowych TBSP na giełdzie (ETFBSTBSP.PL). Całość portfela pozostaje w 100% w PLN i spełnia wszystkie wymogi ustawy o OKI bez podatku Belki!'
+    tacticalTip: 'W koncie OKI wypełnij sublimit 25 tys. zł bezpiecznymi obligacjami detalicznymi (TOS/COI), a pozostałe min. 75 tys. zł ulokuj w notowanym na GPW w PLN funduszu Beta ETF S&P 500 PLN-Hedged (ETFBSPXPL.PL) oraz hurtowym ETF-ie obligacji skarbowych TBSP na giełdzie (ETFBSTBSP.PL). Nawet w reżimie defensywnym nadwyżkę obligacji ponad 25 tys. zł trzymaj w ETFBSTBSP.PL, aby nie przekroczyć podlimitu oszczędnościowego!'
   };
 
   return {
@@ -229,6 +264,8 @@ function getFullPortfolioRecommendation(riskScore, latestReading = {}) {
     strategyStance: allocation.strategyStance,
     actionSummary: allocation.actionSummary,
     weights: allocation.weights,
+    dcaWeights: allocation.dcaWeights,
+    bondsBreakdown: allocation.bondsBreakdown,
     buckets,
     okiGuidance,
     updatedAt: new Date().toISOString(),
@@ -236,12 +273,16 @@ function getFullPortfolioRecommendation(riskScore, latestReading = {}) {
 }
 
 /**
- * Calculate concrete monthly contribution split in PLN
+ * Calculate concrete monthly contribution split in PLN.
+ * Uses dcaWeights so monthly regular savers continue contrarian accumulation during market dips
+ * while respecting OKI sublimit rules.
  */
 function calculateContributionSplit(amountPln, riskScore, latestReading = {}) {
   const total = Math.max(0, parseFloat(amountPln) || 0);
+  const allocation = getTargetAllocationWeights(riskScore);
   const recommendation = getFullPortfolioRecommendation(riskScore, latestReading);
-  const weights = recommendation.weights;
+  const weights = allocation.dcaWeights || allocation.weights;
+  const isCrisisDca = riskScore >= 76;
 
   const split = [
     {
@@ -250,7 +291,9 @@ function calculateContributionSplit(amountPln, riskScore, latestReading = {}) {
       ticker: 'ETFBSPXPL.PL',
       percent: weights.globalEquities,
       amountPln: Math.round((total * (weights.globalEquities / 100)) * 100) / 100,
-      note: 'Zgodny z OKI — notowany na GPW w PLN',
+      note: isCrisisDca
+        ? 'Kontrariańska transza DCA na wyprzedaży (GPW w PLN)'
+        : 'Zgodny z OKI — notowany na GPW w PLN',
     },
     {
       name: 'Polskie Akcje (GPW)',
@@ -258,23 +301,27 @@ function calculateContributionSplit(amountPln, riskScore, latestReading = {}) {
       ticker: 'ETFBW20TR / ETFBM40TR',
       percent: weights.polishEquities,
       amountPln: Math.round((total * (weights.polishEquities / 100)) * 100) / 100,
-      note: 'Kup na GPW w ramach OKI',
+      note: isCrisisDca
+        ? 'Mała transza akumulacyjna DCA przy niskich wycenach'
+        : 'Kup na GPW w ramach części kapitałowej OKI',
     },
     {
       name: 'Obligacje Skarbowe',
-      instrumentName: 'Beta ETF TBSP (giełda) lub TOS/COI (detal)',
+      instrumentName: 'Beta ETF TBSP (giełda) lub TOS/COI (podlimit 25k)',
       ticker: 'ETFBSTBSP / TOS / COI',
       percent: weights.treasuryBonds,
       amountPln: Math.round((total * (weights.treasuryBonds / 100)) * 100) / 100,
-      note: 'W OKI: TBSP na giełdzie bez limitu 25k, lub TOS/COI w podlimicie',
+      note: 'Do 25k zł w OKI: TOS/COI; powyżej 25k zł: giełdowy ETFBSTBSP.PL',
     },
     {
       name: 'Płynna Gotówka / Złoto',
       instrumentName: 'Konto Oszczędnościowe BFG / Złoto',
-      ticker: 'Konto / Złoto fizyczne',
+      ticker: 'Konto OKI / Złoto fizyczne',
       percent: weights.cashAndGold,
       amountPln: Math.round((total * (weights.cashAndGold / 100)) * 100) / 100,
-      note: 'Zasil konto oszczędnościowe lub zachowaj bufor',
+      note: riskScore >= 51
+        ? 'Bufor płynności BFG (w limicie 25k OKI) lub złoto fizyczne poza OKI'
+        : 'Zasil konto oszczędnościowe lub zachowaj bufor płynności',
     }
   ];
 

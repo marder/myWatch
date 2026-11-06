@@ -52,29 +52,44 @@ function calculateSma200(wigSeries, endIndex) {
  * Evaluate Pillar 1: Yield Curve Slope & Dynamics (Max 30 pts)
  */
 function evaluatePillar1(pl10y, pl2y, pl10y_20d_ago) {
-  if (pl10y == null || pl2y == null) return { score: 0, spread: 0, warning: null };
+  if (pl10y == null || pl2y == null) return { score: 0, spread: 0, pl10y_20d_chg: 0, warning: null };
+
+  const cfg = config.scoring?.pillar1_curve || {
+    maxPoints: 30,
+    deepInversion: -0.35,
+    inversion: -0.10,
+    flatMax: 0.15,
+    selloff20dThreshold: 0.50,
+  };
 
   const spread = Math.round((pl10y - pl2y) * 100) / 100;
   const pl10y_20d_chg = pl10y_20d_ago != null ? Math.round((pl10y - pl10y_20d_ago) * 100) / 100 : 0;
 
   let score = 0;
-  let warning = null;
+  const warnings = [];
 
-  if (spread < -0.35) {
-    score = 30;
-    warning = 'Głęboka inwersja krzywej dochodowości (PL10Y < PL2Y) – silny sygnał recesyjny.';
-  } else if (spread < -0.10) {
+  if (spread < cfg.deepInversion) {
+    score = cfg.maxPoints;
+    warnings.push('Głęboka inwersja krzywej dochodowości (PL10Y < PL2Y) – silny sygnał recesyjny.');
+  } else if (spread < cfg.inversion) {
     score = 22;
-    warning = 'Inwersja krzywej dochodowości – rynek obligacji wycenia hamowanie gospodarki.';
-  } else if (spread <= 0.15) {
+    warnings.push('Inwersja krzywej dochodowości – rynek obligacji wycenia hamowanie gospodarki.');
+  } else if (spread <= cfg.flatMax) {
     score = 12;
-    warning = 'Płaska krzywa rentowności – faza przejściowa cyklu koniunkturalnego.';
-  } else if (spread > 0.15 && pl10y_20d_chg > 0.50) {
-    score = 15;
-    warning = 'Gwałtowna wyprzedaż długu skarbowego (wzrost rentowności 10Y o >0.50 pp w 20 sesji).';
+    warnings.push('Płaska krzywa rentowności – faza przejściowa cyklu koniunkturalnego.');
   }
 
-  return { score, spread, warning };
+  if (pl10y_20d_chg > cfg.selloff20dThreshold) {
+    score = Math.min(cfg.maxPoints, score + 15);
+    warnings.push(`Gwałtowna wyprzedaż długu skarbowego (wzrost rentowności 10Y o +${pl10y_20d_chg} pp w 20 sesji).`);
+  }
+
+  return {
+    score,
+    spread,
+    pl10y_20d_chg,
+    warning: warnings.length > 0 ? warnings.join(' ') : null,
+  };
 }
 
 /**
@@ -83,18 +98,29 @@ function evaluatePillar1(pl10y, pl2y, pl10y_20d_ago) {
 function evaluatePillar2(pl10y, de10y) {
   if (pl10y == null || de10y == null) return { score: 0, spreadBps: 0, warning: null };
 
+  const cfg = config.scoring?.pillar2_sovereign || {
+    maxPoints: 25,
+    criticalBps: 400,
+    highBps: 330,
+    elevatedBps: 270,
+  };
+
   const spreadBps = Math.round((pl10y - de10y) * 100);
   let score = 0;
   let warning = null;
 
-  if (spreadBps > 400) {
-    score = 25;
-    warning = `Krytyczny spread kredytowy PL vs DE (${spreadBps} bps > 400) – silna presja odpływu kapitału.`;
-  } else if (spreadBps > 330) {
-    score = 18;
+  if (spreadBps > cfg.criticalBps) {
+    score = cfg.maxPoints;
+    warning = `Krytyczny spread kredytowy PL vs DE (${spreadBps} bps > ${cfg.criticalBps}) – silna presja odpływu kapitału.`;
+  } else if (spreadBps > cfg.highBps) {
+    // Smooth interpolation between highBps (18 pts) and criticalBps (24 pts)
+    const ratio = (spreadBps - cfg.highBps) / Math.max(1, cfg.criticalBps - cfg.highBps);
+    score = Math.min(cfg.maxPoints, Math.round(18 + ratio * 6));
     warning = `Wysoka premia za ryzyko kraju (spread PL vs DE: ${spreadBps} bps).`;
-  } else if (spreadBps > 270) {
-    score = 8;
+  } else if (spreadBps > cfg.elevatedBps) {
+    // Smooth interpolation between elevatedBps (8 pts) and highBps (15 pts)
+    const ratio = (spreadBps - cfg.elevatedBps) / Math.max(1, cfg.highBps - cfg.elevatedBps);
+    score = Math.round(8 + ratio * 7);
     warning = `Umiarkowanie podwyższony spread względem bundów niemieckich (${spreadBps} bps).`;
   }
 
@@ -105,52 +131,81 @@ function evaluatePillar2(pl10y, de10y) {
  * Evaluate Pillar 3: FX Risk-Off Pressure — USD/PLN & EUR/PLN (Max 25 pts)
  */
 function evaluatePillar3(usdNow, usd22dAgo, eurNow, eur22dAgo) {
+  const cfg = config.scoring?.pillar3_fx || {
+    maxPoints: 25,
+    criticalUsdChg: 6.5,
+    criticalEurChg: 4.5,
+    elevatedUsdChg: 4.0,
+    elevatedEurChg: 2.5,
+    mildUsdChg: 2.0,
+    mildEurChg: 1.5,
+  };
+
   const usd30dChg = (usdNow && usd22dAgo) ? Math.round((((usdNow - usd22dAgo) / usd22dAgo) * 100) * 100) / 100 : 0;
   const eur30dChg = (eurNow && eur22dAgo) ? Math.round((((eurNow - eur22dAgo) / eur22dAgo) * 100) * 100) / 100 : 0;
 
   let score = 0;
   let warning = null;
 
-  if (usd30dChg > 6.5 || eur30dChg > 4.5) {
-    score = 25;
+  if (usd30dChg > cfg.criticalUsdChg || eur30dChg > cfg.criticalEurChg) {
+    score = cfg.maxPoints;
     warning = `Gwałtowna ucieczka od złotego (USD 30d: +${usd30dChg}%, EUR 30d: +${eur30dChg}%) – globalny tryb Risk-Off.`;
-  } else if (usd30dChg > 4.0 || eur30dChg > 2.5) {
+  } else if (usd30dChg > cfg.elevatedUsdChg || eur30dChg > cfg.elevatedEurChg) {
     score = 15;
     warning = `Wyraźne osłabienie PLN (USD 30d: +${usd30dChg}%, EUR 30d: +${eur30dChg}%) – odpływ kapitału portfelowego.`;
-  } else if (usd30dChg > 2.0) {
+  } else if (usd30dChg > cfg.mildUsdChg || eur30dChg > (cfg.mildEurChg ?? 1.5)) {
     score = 6;
-    warning = `Lekka presja podażowa na złotym (USD 30d: +${usd30dChg}%).`;
+    warning = `Lekka presja podażowa na złotym (USD 30d: ${usd30dChg >= 0 ? '+' : ''}${usd30dChg}%, EUR 30d: ${eur30dChg >= 0 ? '+' : ''}${eur30dChg}%).`;
   }
 
   return { score, usd30dChg, eur30dChg, warning };
 }
 
 /**
- * Evaluate Pillar 4: GPW Equity Trend & Technical Regime (Max 20 pts)
+ * Evaluate Pillar 4: GPW Equity Trend, Banking Sector Stress & Technical Regime (Max 20 pts)
  */
-function evaluatePillar4(wigNow, sma200, wig20dAgo) {
+function evaluatePillar4(wigNow, sma200, wig20dAgo, wigBanki20dChg = 0) {
   if (wigNow == null || sma200 == null) {
     return { score: 0, sma200: wigNow || 0, smaDiff: 0, warning: null };
   }
+
+  const cfg = config.scoring?.pillar4_equities || {
+    maxPoints: 20,
+    bearSmaDiff: -12.0,
+    weakSmaDiff: -3.0,
+    correction20d: -8.0,
+    banksCorrection20d: -10.0,
+  };
 
   const smaDiff = Math.round((((wigNow - sma200) / sma200) * 100) * 100) / 100;
   const wig20dChg = wig20dAgo ? Math.round((((wigNow - wig20dAgo) / wig20dAgo) * 100) * 100) / 100 : 0;
 
   let score = 0;
-  let warning = null;
+  const warnings = [];
 
-  if (smaDiff < -12.0) {
-    score = 20;
-    warning = `Rynek niedźwiedzia na GPW – indeks WIG głęboko poniżej SMA200 (${smaDiff}%).`;
-  } else if (smaDiff < -3.0) {
+  if (smaDiff < cfg.bearSmaDiff) {
+    score = cfg.maxPoints;
+    warnings.push(`Rynek niedźwiedzia na GPW – indeks WIG głęboko poniżej SMA200 (${smaDiff}%).`);
+  } else if (smaDiff < cfg.weakSmaDiff) {
     score = 12;
-    warning = `Osłabienie trendu długoterminowego – WIG poniżej średniej 200-sesyjnej (${smaDiff}%).`;
-  } else if (smaDiff >= -3.0 && wig20dChg < -8.0) {
+    warnings.push(`Osłabienie trendu długoterminowego – WIG poniżej średniej 200-sesyjnej (${smaDiff}%).`);
+  } else if (smaDiff >= cfg.weakSmaDiff && wig20dChg < cfg.correction20d) {
     score = 10;
-    warning = `Gwałtowna korekta krótkoterminowa na GPW (${wig20dChg}% w 20 sesji).`;
+    warnings.push(`Gwałtowna korekta krótkoterminowa na GPW (${wig20dChg}% w 20 sesji).`);
   }
 
-  return { score, sma200, smaDiff, warning };
+  // Banking sector stress signal (leading domestic risk indicator on GPW)
+  if (wigBanki20dChg < (cfg.banksCorrection20d ?? -10.0)) {
+    score = Math.min(cfg.maxPoints, score + 6);
+    warnings.push(`Wyprzedaż w sektorze bankowym (WIG-Banki 20d: ${wigBanki20dChg}%) – sygnał presji na krajowy system finansowy.`);
+  }
+
+  return {
+    score,
+    sma200,
+    smaDiff,
+    warning: warnings.length > 0 ? warnings.join(' ') : null,
+  };
 }
 
 /**
@@ -173,7 +228,7 @@ function generatePlainLanguageView(totalScore, p1, p2, p3, p4, metrics) {
     headline = 'Duże turbulencje na rynkach finansowych. Zalecana maksymalna ostrożność i ochrona kapitału.';
     savingsAdvice = 'Ogranicz ryzyko do zera: bezpieczne obligacje Skarbu Państwa (COI, EDO, TOS) oraz konta w granicach gwarancji BFG (do 100 tys. EUR na osobę).';
     loansAdvice = 'Rynki długu są pod dużą presją. Koszt pieniądza może wzrosnąć, nie należy liczyć na szybkie obniżki rat kredytów.';
-    investingAdvice = 'Tryb defensywny: nie kupuj akcji na siłę podczas spadków. Poczekaj na wygaszenie zmienności, utrzymując poduszkę gotówkową.';
+    investingAdvice = 'Tryb defensywny: chroń zgromadzony kapitał w obligacjach skarbowych (na koncie OKI do 25 tys. zł w detalicznych COI/TOS, powyżej w Beta ETF TBSP). Nowe dopłaty DCA realizuj wyłącznie w małych transzach.';
     currenciesAdvice = 'Złoty gwałtownie traci. Jeśli masz wydatki w euro lub dolarach, licz się z wyższymi cenami wyjazdów i towarów importowanych.';
   } else if (totalScore >= 51) {
     trafficLight = 'warning';
@@ -182,7 +237,7 @@ function generatePlainLanguageView(totalScore, p1, p2, p3, p4, metrics) {
     headline = 'Inwestorzy stają się nerwowi. Rośnie koszt pożyczania i widać odpływ zagranicznego kapitału.';
     savingsAdvice = 'Warto zabezpieczyć część oszczędności na dłuższy termin – sprawdź 4-letnie obligacje indeksowane inflacją (COI) lub dobre lokaty bankowe.';
     loansAdvice = 'Raty kredytów raczej nie spadną szybko. Prawdopodobna stabilizacja lub drobne wahania stawek WIBOR/WIRON.';
-    investingAdvice = 'Zwiększ udział gotówki i obligacji w portfelu. Wstrzymaj się z dużymi jednorazowymi zakupami akcji – lepiej poczekać na uspokojenie nastrojów.';
+    investingAdvice = 'Zwiększ udział obligacji skarbowych i gotówki w portfelu OKI / IKE. Wstrzymaj się z dużymi jednorazowymi zakupami akcji – lepiej kupować małymi transzami.';
     currenciesAdvice = 'Złoty jest pod lekką presją spadkową. Wakacje za granicą mogą być nieco droższe niż w poprzednich miesiącach.';
   } else if (totalScore >= 26) {
     trafficLight = 'caution';
@@ -191,16 +246,16 @@ function generatePlainLanguageView(totalScore, p1, p2, p3, p4, metrics) {
     headline = 'W gospodarce pojawiają się drobne sygnały ostrzegawcze, jednak sytuacja jest pod kontrolą.';
     savingsAdvice = 'Utrzymuj poduszkę finansową na poziomie 3–6 miesięcy wydatków. Lokaty bankowe i obligacje skarbowe dają wciąż przyzwoity procent.';
     loansAdvice = 'Stopy procentowe pozostają stabilne. Rynek nie wycenia w najbliższym czasie gwałtownych ruchów w górę ani w dół.';
-    investingAdvice = 'Dobra pora na spokojne, regularne odkładanie stałych kwot (tzw. uśrednianie DCA) na konta emerytalne IKE/IKZE oraz w funduszach indeksowych.';
+    investingAdvice = 'Dobra pora na spokojne, regularne odkładanie stałych kwot (tzw. uśrednianie DCA) na konto OKI (do 100 tys. zł bez podatku Belki) oraz IKE/IKZE w ETF-ach w PLN.';
     currenciesAdvice = 'Kursy walut NBP (EUR i USD) poruszają się w stabilnych przedziałach. Nie ma potrzeby panicznego kupowania waluty.';
   } else {
     trafficLight = 'safe';
     badge = '🟢 Bezpiecznie i Stabilnie';
     badgeColor = 'emerald';
     headline = 'Na polskim rynku finansowym panuje spokój. Nie ma symptomów kryzysu ani paniki.';
-    savingsAdvice = 'Warunki są stabilne. Jeśli chcesz mieć gwarantowany zysk, warto zablokować oprocentowanie obligacji skarbowych (np. 3-letnich TOS) przed ewentualnymi obniżkami stóp.';
+    savingsAdvice = 'Warunki są stabilne. Jeśli chcesz mieć gwarantowany zysk, warto zablokować oprocentowanie obligacji skarbowych (np. 3-letnich TOS w podlimicie 25 tys. zł na OKI) przed obniżkami stóp.';
     loansAdvice = 'Otoczenie sprzyja stopniowemu spadkowi kosztu kredytów w przyszłości. Brak presji na wzrost rat.';
-    investingAdvice = 'Optymalne warunki dla długoterminowych inwestorów. Regularne zasilanie IKE/IKZE i funduszy akcji polskich spółek przynosi stabilne rezultaty.';
+    investingAdvice = 'Optymalne warunki dla długoterminowych inwestorów. Regularne zasilanie konta OKI (ETF-y na GPW w PLN bez podatku Belki) oraz IKE/IKZE przynosi stabilne rezultaty.';
     currenciesAdvice = 'Złoty jest mocny i stabilny. Korzystne warunki do podróżowania i zakupów zagranicznych w euro oraz dolarach.';
   }
 
@@ -353,6 +408,8 @@ function generateConclusions(totalScore, p1, p2, p3, p4, metrics, indicators, ta
   // 6. Portfolio & OKI Allocation Recommendation
   const portfolioRecommendation = allocator.getFullPortfolioRecommendation(totalScore, {
     spread_10y_2y: p1.spread,
+    pl10y_20d_chg: p1.pl10y_20d_chg,
+    spread_pl_de: p2.spreadBps,
     wig_sma200_diff: p4.smaDiff,
   });
 
@@ -374,7 +431,7 @@ function generateConclusions(totalScore, p1, p2, p3, p4, metrics, indicators, ta
  * Align all indicators and compute a single day record
  */
 function computeReadingForDate(targetDate, wigIndex, indicators) {
-  const { usd, eur, pl10y, pl2y, de10y, wig } = indicators;
+  const { usd, eur, pl10y, pl2y, de10y, wig, wig_banki } = indicators;
 
   const wigItem = wig[wigIndex];
   const wigClose = wigItem.close;
@@ -399,14 +456,27 @@ function computeReadingForDate(targetDate, wigIndex, indicators) {
   const wig20dAgo = (wigIndex >= 20 && wig[wigIndex - 20]) ? wig[wigIndex - 20].close : wigClose;
   const sma200Val = calculateSma200(wig, wigIndex);
 
+  // Banking sector 20-day change (leading domestic financial stress signal)
+  let wigBanki20dChg = 0;
+  if (Array.isArray(wig_banki) && wig_banki.length > 0) {
+    const wbIdx = findIndexOnOrBefore(wig_banki, targetDate);
+    if (wbIdx >= 0) {
+      const wbNow = wig_banki[wbIdx].close;
+      const wb20d = (wbIdx >= 20 && wig_banki[wbIdx - 20]) ? wig_banki[wbIdx - 20].close : wbNow;
+      if (wbNow && wb20d) {
+        wigBanki20dChg = Math.round((((wbNow - wb20d) / wb20d) * 100) * 100) / 100;
+      }
+    }
+  }
+
   // Pillar 1: Yield Curve
   const p1 = evaluatePillar1(pl10yVal, pl2yVal, pl10y20dAgo);
   // Pillar 2: Sovereign Spread
   const p2 = evaluatePillar2(pl10yVal, de10yVal);
   // Pillar 3: FX Pressure
   const p3 = evaluatePillar3(usdVal, usd22dAgo, eurVal, eur22dAgo);
-  // Pillar 4: GPW Equities
-  const p4 = evaluatePillar4(wigClose, sma200Val, wig20dAgo);
+  // Pillar 4: GPW Equities & Banking Sector
+  const p4 = evaluatePillar4(wigClose, sma200Val, wig20dAgo, wigBanki20dChg);
 
   const totalScore = Math.min(100, Math.max(0, p1.score + p2.score + p3.score + p4.score));
 
