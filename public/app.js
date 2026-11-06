@@ -7,7 +7,7 @@ const state = {
   latest: null,
   history: [],
   news: [],
-  adminToken: sessionStorage.getItem('macro_radar_token') || null,
+  adminToken: localStorage.getItem('macro_radar_token') || sessionStorage.getItem('macro_radar_token') || null,
   charts: {
     risk: null,
     curve: null,
@@ -16,6 +16,50 @@ const state = {
   },
   isRefreshing: false,
 };
+
+/**
+ * Returns authentication headers for API requests
+ */
+function getAuthHeaders(extra = {}) {
+  const headers = { ...extra };
+  if (state.adminToken) {
+    headers['Authorization'] = `Bearer ${state.adminToken}`;
+  }
+  return headers;
+}
+
+/**
+ * Switch view to logged-in dashboard
+ */
+function showAppView() {
+  const loginScreen = document.getElementById('login-screen');
+  const appContent = document.getElementById('app-content');
+  if (loginScreen) loginScreen.classList.add('hidden');
+  if (appContent) appContent.classList.remove('hidden');
+}
+
+/**
+ * Switch view to login screen
+ */
+function showLoginScreen() {
+  const loginScreen = document.getElementById('login-screen');
+  const appContent = document.getElementById('app-content');
+  if (appContent) appContent.classList.add('hidden');
+  if (loginScreen) loginScreen.classList.remove('hidden');
+  const errorEl = document.getElementById('gate-login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+}
+
+/**
+ * Handle session expiration or unauthorized response
+ */
+function handleAuthRequired() {
+  state.adminToken = null;
+  localStorage.removeItem('macro_radar_token');
+  sessionStorage.removeItem('macro_radar_token');
+  showLoginScreen();
+  showToast('Wymagane logowanie do serwisu.', 'error');
+}
 
 // Color & Status Mapping
 const STATUS_CONFIG = {
@@ -95,13 +139,24 @@ function formatRelativeTime(dateString) {
  * Fetch latest reading, historical time series, and economic news
  */
 async function loadDashboard() {
+  if (!state.adminToken) {
+    showLoginScreen();
+    return;
+  }
+
   try {
+    const headers = getAuthHeaders();
     const [latestRes, historyRes, newsRes, healthRes] = await Promise.all([
-      fetch('/api/latest'),
-      fetch('/api/history?limit=60'),
-      fetch('/api/news'),
+      fetch('/api/latest', { headers }),
+      fetch('/api/history?limit=60', { headers }),
+      fetch('/api/news', { headers }),
       fetch('/api/health')
     ]);
+
+    if (latestRes.status === 401 || historyRes.status === 401) {
+      handleAuthRequired();
+      return;
+    }
 
     if (!latestRes.ok) {
       throw new Error(`Błąd wczytywania najnowszego odczytu (HTTP ${latestRes.status})`);
@@ -116,7 +171,7 @@ async function loadDashboard() {
     renderGpwIndices(state.latest?.conclusions?.gpw_indices);
     renderHeroSection(state.latest);
     const allocRec = state.latest?.conclusions?.portfolio_recommendation || 
-      (await fetch('/api/allocation').then(r => r.ok ? r.json() : null).catch(() => null));
+      (await fetch('/api/allocation', { headers }).then(r => r.ok ? r.json() : null).catch(() => null));
     renderAllocationSection(allocRec);
     renderKpiCards(state.latest);
     renderWarnings(state.latest.warnings || []);
@@ -486,9 +541,14 @@ async function calculateAndRenderContribution(amountPln) {
   try {
     const res = await fetch('/api/allocation/calculate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ amountPln })
     });
+
+    if (res.status === 401) {
+      handleAuthRequired();
+      return;
+    }
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
@@ -926,7 +986,16 @@ async function handleRefreshClick() {
     label.textContent = 'Pobieranie...';
     icon.classList.add('animate-spin');
 
-    const res = await fetch('/api/refresh', { method: 'POST' });
+    const res = await fetch('/api/refresh', {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+
+    if (res.status === 401) {
+      handleAuthRequired();
+      return;
+    }
+
     const result = await res.json();
 
     if (!res.ok) {
@@ -1021,6 +1090,59 @@ async function loadAdminStats() {
   }
 }
 
+async function handleGateLogin(e) {
+  e.preventDefault();
+  const userEl = document.getElementById('gate-login-user');
+  const passEl = document.getElementById('gate-login-pass');
+  const errorEl = document.getElementById('gate-login-error');
+  const submitBtn = document.getElementById('gate-login-submit');
+
+  const username = userEl ? userEl.value.trim() : '';
+  const password = passEl ? passEl.value.trim() : '';
+
+  if (errorEl) errorEl.classList.add('hidden');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-70');
+  }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Nieprawidłowe dane logowania');
+    }
+
+    state.adminToken = data.token;
+    localStorage.setItem('macro_radar_token', data.token);
+    sessionStorage.setItem('macro_radar_token', data.token);
+
+    const userLabel = document.getElementById('header-user-label');
+    if (userLabel) userLabel.textContent = data.user || 'admin';
+    const adminUserLabel = document.getElementById('admin-username-label');
+    if (adminUserLabel) adminUserLabel.textContent = data.user || 'admin';
+
+    showToast('Zalogowano pomyślnie!', 'success');
+    showAppView();
+    await loadDashboard();
+  } catch (err) {
+    if (errorEl) {
+      errorEl.textContent = err.message;
+      errorEl.classList.remove('hidden');
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-70');
+    }
+  }
+}
+
 async function handleLogin(e) {
   e.preventDefault();
   const username = document.getElementById('login-user').value.trim();
@@ -1042,9 +1164,12 @@ async function handleLogin(e) {
     }
 
     state.adminToken = data.token;
+    localStorage.setItem('macro_radar_token', data.token);
     sessionStorage.setItem('macro_radar_token', data.token);
     const labelEl = document.getElementById('admin-username-label');
     if (labelEl) labelEl.textContent = data.user || 'admin';
+    const userLabel = document.getElementById('header-user-label');
+    if (userLabel) userLabel.textContent = data.user || 'admin';
     showToast('Zalogowano pomyślnie jako administrator!', 'success');
     showAdminDashboard();
   } catch (err) {
@@ -1063,9 +1188,11 @@ async function handleLogout() {
     } catch (e) {}
   }
   state.adminToken = null;
+  localStorage.removeItem('macro_radar_token');
   sessionStorage.removeItem('macro_radar_token');
-  showToast('Wylogowano z panelu bazy danych.', 'success');
-  showLoginView();
+  closeAdminModal();
+  showLoginScreen();
+  showToast('Wylogowano z serwisu.', 'success');
 }
 
 async function handleDownloadDatabase() {
@@ -1184,6 +1311,13 @@ async function handleRunBackfill() {
 
 // Initial Setup
 document.addEventListener('DOMContentLoaded', () => {
+  // Gate login form & header logout
+  const gateLoginForm = document.getElementById('gate-login-form');
+  if (gateLoginForm) gateLoginForm.addEventListener('submit', handleGateLogin);
+
+  const headerLogoutBtn = document.getElementById('header-logout-btn');
+  if (headerLogoutBtn) headerLogoutBtn.addEventListener('click', handleLogout);
+
   // Navigation buttons
   const refreshBtn = document.getElementById('refresh-btn');
   if (refreshBtn) refreshBtn.addEventListener('click', handleRefreshClick);
@@ -1218,21 +1352,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Check existing token
-  if (state.adminToken) {
-    fetch('/api/auth/me', {
-      headers: { 'Authorization': `Bearer ${state.adminToken}` }
-    })
-      .then(r => r.json())
-      .then(d => {
-        if (!d.authenticated) {
-          state.adminToken = null;
-          sessionStorage.removeItem('macro_radar_token');
-        }
-      })
-      .catch(() => {});
-  }
-
   // OKI Calculator events
   const calcBtn = document.getElementById('btn-calc-split');
   const calcInput = document.getElementById('calc-amount-input');
@@ -1260,9 +1379,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load data immediately
-  loadDashboard();
+  // Verify authentication state and mount view
+  if (state.adminToken) {
+    fetch('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${state.adminToken}` }
+    })
+      .then(r => r.ok ? r.json() : { authenticated: false })
+      .then(d => {
+        if (d && d.authenticated) {
+          const userLabel = document.getElementById('header-user-label');
+          if (userLabel) userLabel.textContent = d.user || 'admin';
+          const adminUserLabel = document.getElementById('admin-username-label');
+          if (adminUserLabel) adminUserLabel.textContent = d.user || 'admin';
+          showAppView();
+          loadDashboard();
+        } else {
+          handleAuthRequired();
+        }
+      })
+      .catch(() => {
+        handleAuthRequired();
+      });
+  } else {
+    showLoginScreen();
+  }
 
-  // Auto-refresh UI every 5 minutes in background
-  setInterval(loadDashboard, 5 * 60 * 1000);
+  // Auto-refresh UI every 5 minutes in background only when authenticated
+  setInterval(() => {
+    if (state.adminToken) {
+      loadDashboard();
+    }
+  }, 5 * 60 * 1000);
 });

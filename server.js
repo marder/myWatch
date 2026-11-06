@@ -177,14 +177,14 @@ app.get('/api/admin/db/stats', auth.requireAuth, (req, res) => {
 });
 
 // ==========================================
-// PUBLIC FINANCIAL ANALYTICS REST API
+// PROTECTED FINANCIAL ANALYTICS REST API
 // ==========================================
 
 /**
  * GET /api/latest
  * Returns the most recent reading with parsed warnings, conclusions, plain language, and GPW indices
  */
-app.get('/api/latest', (req, res) => {
+app.get('/api/latest', auth.requireAuth, (req, res) => {
   try {
     const latest = db.getLatestReading();
     if (!latest) {
@@ -209,7 +209,7 @@ app.get('/api/latest', (req, res) => {
  * GET /api/history?limit=60
  * Returns the last `limit` readings ordered by timestamp ASC for charting
  */
-app.get('/api/history', (req, res) => {
+app.get('/api/history', auth.requireAuth, (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 60;
     const history = db.getHistory(limit);
@@ -229,7 +229,7 @@ app.get('/api/history', (req, res) => {
  * POST /api/refresh
  * Triggers an immediate fetch & calculation for the latest market data
  */
-app.post('/api/refresh', async (req, res) => {
+app.post('/api/refresh', auth.requireAuth, async (req, res) => {
   try {
     const result = await scheduler.runUpdate();
     if (!result.success) {
@@ -254,7 +254,7 @@ app.post('/api/refresh', async (req, res) => {
  * GET /api/news
  * Returns top economic news with titles, descriptions, and direct URLs
  */
-app.get('/api/news', async (req, res) => {
+app.get('/api/news', auth.requireAuth, async (req, res) => {
   try {
     const news = await fetcher.fetchEconomicNews();
     res.json(news);
@@ -268,7 +268,7 @@ app.get('/api/news', async (req, res) => {
  * GET /api/gpw-indices
  * Returns key GPW indices overview (WIG, WIG20, mWIG40, sWIG80, WIG-Banki)
  */
-app.get('/api/gpw-indices', (req, res) => {
+app.get('/api/gpw-indices', auth.requireAuth, (req, res) => {
   try {
     const latest = db.getLatestReading();
     const gpwIndices = latest?.conclusions?.gpw_indices || [];
@@ -283,7 +283,7 @@ app.get('/api/gpw-indices', (req, res) => {
  * GET /api/allocation
  * Returns dynamic OKI portfolio allocation weights and concrete instruments
  */
-app.get('/api/allocation', (req, res) => {
+app.get('/api/allocation', auth.requireAuth, (req, res) => {
   try {
     const latest = db.getLatestReading();
     const riskScore = latest ? latest.risk_score : 15;
@@ -300,7 +300,7 @@ app.get('/api/allocation', (req, res) => {
  * Calculates monthly contribution breakdown in PLN across specific instruments
  * Body: { amountPln: number }
  */
-app.post('/api/allocation/calculate', (req, res) => {
+app.post('/api/allocation/calculate', auth.requireAuth, (req, res) => {
   try {
     const amountPln = parseFloat(req.body?.amountPln) || 0;
     const latest = db.getLatestReading();

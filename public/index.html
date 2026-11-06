@@ -63,8 +63,69 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white overflow-x-hidden w-full">
 
+  <!-- ========================================== -->
+  <!-- FULLSCREEN LOGIN GATE (AUTHENTICATION)     -->
+  <!-- ========================================== -->
+  <div id="login-screen" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 min-h-screen overflow-y-auto">
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 sm:p-8 animate-in fade-in duration-200">
+      
+      <!-- Logo & Brand Header -->
+      <div class="flex items-center space-x-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20 ring-1 ring-white/20 shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-white tracking-tight">Poland Macro Crisis Radar</h1>
+          <p class="text-xs text-slate-400">Dostęp wyłącznie dla zalogowanego użytkownika</p>
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <form id="gate-login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Login:</label>
+          <input type="text" id="gate-login-user" value="admin" placeholder="np. admin" required autocomplete="username" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 font-mono-numbers transition">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Hasło:</label>
+          <input type="password" id="gate-login-pass" value="admin123" placeholder="Wpisz hasło" required autocomplete="current-password" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 font-mono-numbers transition">
+        </div>
+
+        <div id="gate-login-error" class="text-xs text-rose-400 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 hidden"></div>
+
+        <button type="submit" id="gate-login-submit" class="w-full py-3 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-sky-900/40 active:scale-[0.98]">
+          Zaloguj się do serwisu
+        </button>
+      </form>
+
+      <!-- Prominent Disclaimer Notification -->
+      <div class="mt-6 pt-5 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-2 leading-relaxed bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60">
+        <div class="flex items-center gap-1.5 text-amber-400 font-bold">
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>Zastrzeżenie prawne (Disclaimer):</span>
+        </div>
+        <p class="text-slate-400">
+          Niniejsza aplikacja stanowi <strong>projekt wyłącznie do użytku osobistego twórcy</strong> i służy do prywatnych celów analityczno-badawczych.
+        </p>
+        <p class="text-slate-400">
+          Żadne prezentowane wskaźniki, kalkulacje, analizy makroekonomiczne ani symulacje alokacji (w tym dotyczące OKI/IKE/IKZE) <strong>nie stanowią porady inwestycyjnej</strong>, rekomendacji finansowej ani doradztwa podatkowego w rozumieniu przepisów prawa.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MAIN APPLICATION CONTENT (PROTECTED)       -->
+  <!-- ========================================== -->
+  <div id="app-content" class="min-h-screen flex flex-col w-full hidden">
+
   <!-- Top Navigation Bar -->
-  <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-50">
+  <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 min-w-0">
       <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
         <div class="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-gradient-to-tr from-sky-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20 ring-1 ring-white/20">
@@ -92,6 +153,11 @@
           <span>Sesja: <strong id="header-date" class="font-mono-numbers text-white ml-1">Wczytywanie...</strong></span>
         </div>
 
+        <!-- Logged User Badge -->
+        <div class="hidden sm:flex items-center text-xs font-mono-numbers text-slate-400 bg-slate-800/70 border border-slate-700/60 px-2.5 py-1.5 rounded-lg">
+          <span>👤 <strong id="header-user-label" class="text-white">admin</strong></span>
+        </div>
+
         <!-- Admin / Database Button -->
         <button id="admin-modal-btn" title="Panel Bazy Danych i Backup" aria-label="Panel Bazy Danych i Backup" class="flex items-center justify-center space-x-1.5 text-xs font-semibold p-2 sm:px-3 sm:py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
           <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,11 +171,32 @@
           <svg id="refresh-icon" class="w-4 h-4 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span id="refresh-label" class="hidden sm:inline">Odśwież dane</span>
+          <span id="refresh-label" class="hidden sm:inline">Odśwież</span>
+        </button>
+
+        <!-- Logout Button -->
+        <button id="header-logout-btn" title="Wyloguj się z serwisu" aria-label="Wyloguj się z serwisu" class="flex items-center justify-center space-x-1.5 text-xs font-semibold p-2 sm:px-3 sm:py-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 transition">
+          <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span class="hidden sm:inline">Wyloguj</span>
         </button>
       </div>
     </div>
   </header>
+
+  <!-- Top Disclaimer Banner -->
+  <div class="bg-amber-500/10 border-b border-amber-500/20 px-3 sm:px-6 py-2.5 text-xs text-amber-300">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="text-amber-400 text-sm shrink-0">⚠️</span>
+        <span class="leading-relaxed">
+          <strong class="font-bold text-amber-200">Projekt do użytku osobistego twórcy:</strong> Serwis ma charakter prywatny i edukacyjny. Prezentowane analizy, wskaźniki i symulacje portfela w ramach OKI nie stanowią porady inwestycyjnej ani rekomendacji finansowej w rozumieniu przepisów prawa.
+        </span>
+      </div>
+      <span class="hidden md:inline-flex text-[10px] uppercase font-mono-numbers px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30 shrink-0 font-bold">Użytek Osobisty</span>
+    </div>
+  </div>
 
   <!-- Notification Toast -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-slate-700 text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
@@ -914,14 +1001,16 @@
   <!-- Footer -->
   <footer class="border-t border-slate-800/80 bg-slate-950 py-4 text-center text-xs text-slate-500">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <div>Poland Macro Crisis Radar • Narzędzie analityczne dla inwestorów GPW i funduszy TFI</div>
+      <div>Poland Macro Crisis Radar • <span class="text-amber-400/90 font-medium">Projekt wyłącznie do użytku osobistego twórcy (nie stanowi porady inwestycyjnej)</span></div>
       <div class="flex items-center space-x-4">
-        <span>Dane: NBP, Stooq, Bankier.pl</span>
+        <span>Dane: NBP, Yahoo Finance, GPW, Bankier.pl</span>
         <span>•</span>
         <span id="footer-uptime">Uptime: --</span>
       </div>
     </div>
   </footer>
+
+  </div> <!-- Close #app-content -->
 
   <!-- Frontend Logic -->
   <script src="/app.js"></script>
