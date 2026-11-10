@@ -337,14 +337,77 @@ function renderNewsSection(newsList) {
 }
 
 /**
- * Helper: Check market trading session and weekend status
+ * Client fallback for Easter calculation
  */
-function getMarketSessionInfo(sessionDateStr) {
-  const now = new Date();
-  const warsawNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' }));
-  const currentDayOfWeek = warsawNow.getDay(); // 0 is Sunday, 6 is Saturday
-  const isWeekendNow = currentDayOfWeek === 0 || currentDayOfWeek === 6;
+function getClientEasterSunday(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(Date.UTC(year, month - 1, day));
+}
 
+function getClientHolidayInfo(dateKey) {
+  const year = parseInt(dateKey.slice(0, 4), 10);
+  const fixed = {
+    '01-01': 'Nowy Rok',
+    '01-06': 'Święto Trzech Króli',
+    '05-01': 'Święto Pracy',
+    '05-03': 'Święto Konstytucji 3 Maja',
+    '08-15': 'Wniebowzięcie NMP / Święto Wojska Polskiego',
+    '11-01': 'Wszystkich Świętych',
+    '11-11': 'Narodowe Święto Niepodległości',
+    '12-24': 'Wigilia (brak sesji GPW)',
+    '12-25': 'Boże Narodzenie (I dzień)',
+    '12-26': 'Boże Narodzenie (II dzień)',
+    '12-31': 'Sylwester (brak sesji GPW)',
+  };
+
+  const md = dateKey.slice(5, 10);
+  if (fixed[md]) {
+    return { isHoliday: true, name: fixed[md] };
+  }
+
+  const easter = getClientEasterSunday(year);
+  const addDays = (d, n) => {
+    const res = new Date(d.getTime());
+    res.setUTCDate(res.getUTCDate() + n);
+    return res;
+  };
+  const fmt = (d) => {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const goodFridayStr = fmt(addDays(easter, -2));
+  const easterStr = fmt(easter);
+  const easterMondayStr = fmt(addDays(easter, 1));
+  const corpusChristiStr = fmt(addDays(easter, 60));
+
+  if (dateKey === goodFridayStr) return { isHoliday: true, name: 'Wielki Piątek (brak sesji GPW)' };
+  if (dateKey === easterStr) return { isHoliday: true, name: 'Niedziela Wielkanocna' };
+  if (dateKey === easterMondayStr) return { isHoliday: true, name: 'Poniedziałek Wielkanocny' };
+  if (dateKey === corpusChristiStr) return { isHoliday: true, name: 'Boże Ciało' };
+
+  return { isHoliday: false, name: null };
+}
+
+/**
+ * Helper: Check market trading session, weekend and Polish holiday status
+ */
+function getMarketSessionInfo(sessionDateStr, marketStatus) {
   let sessionDayName = '';
   if (sessionDateStr) {
     try {
@@ -354,9 +417,51 @@ function getMarketSessionInfo(sessionDateStr) {
     } catch (e) {}
   }
 
+  if (marketStatus) {
+    return {
+      isWeekendNow: !!marketStatus.isWeekend,
+      isHolidayNow: !!marketStatus.isHoliday,
+      holidayName: marketStatus.holidayName,
+      isGpwClosed: !!marketStatus.isGpwClosed,
+      isTradingHours: !!marketStatus.isTradingHours,
+      state: marketStatus.state,
+      sessionDayName,
+      badgeText: marketStatus.badgeText,
+      statusExplanation: marketStatus.statusExplanation,
+      nextTradingDay: marketStatus.nextTradingDay,
+    };
+  }
+
+  // Fallback client-side calculation
+  const now = new Date();
+  const warsawNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' }));
+  const currentDayOfWeek = warsawNow.getDay();
+  const isWeekendNow = currentDayOfWeek === 0 || currentDayOfWeek === 6;
+
+  const y = warsawNow.getFullYear();
+  const m = String(warsawNow.getMonth() + 1).padStart(2, '0');
+  const d = String(warsawNow.getDate()).padStart(2, '0');
+  const dateKey = `${y}-${m}-${d}`;
+  const holiday = getClientHolidayInfo(dateKey);
+
+  const hours = warsawNow.getHours();
+  const minutes = warsawNow.getMinutes();
+  const timeMin = hours * 60 + minutes;
+  const isTradingHours = !isWeekendNow && !holiday.isHoliday && (timeMin >= 540 && timeMin < 1025);
+
+  let state = 'OPEN';
+  if (isWeekendNow) state = 'WEEKEND';
+  else if (holiday.isHoliday) state = 'HOLIDAY';
+  else if (timeMin < 540) state = 'PRE_MARKET';
+  else if (timeMin >= 1025) state = 'POST_MARKET';
+
   return {
     isWeekendNow,
-    currentDayOfWeek,
+    isHolidayNow: holiday.isHoliday,
+    holidayName: holiday.name,
+    isGpwClosed: holiday.isHoliday,
+    isTradingHours,
+    state,
     sessionDayName,
   };
 }
@@ -367,7 +472,7 @@ function getMarketSessionInfo(sessionDateStr) {
 function renderHeroSection(data) {
   if (!data) return;
 
-  const sessionInfo = getMarketSessionInfo(data.timestamp);
+  const sessionInfo = getMarketSessionInfo(data.timestamp, data.market_status);
   const headerDate = document.getElementById('header-date');
   const headerDot = document.getElementById('header-market-dot');
   const headerWeekendTag = document.getElementById('header-weekend-tag');
@@ -379,7 +484,11 @@ function renderHeroSection(data) {
   }
 
   if (sessionInfo.isWeekendNow) {
-    if (headerWeekendTag) headerWeekendTag.classList.remove('hidden');
+    if (headerWeekendTag) {
+      headerWeekendTag.classList.remove('hidden');
+      headerWeekendTag.textContent = '⏸️ Weekend';
+      headerWeekendTag.title = 'Weekend — giełda GPW nie handluje';
+    }
     if (headerDot) {
       headerDot.className = 'w-2 h-2 rounded-full bg-amber-400 shrink-0';
       headerDot.title = 'Dziś jest weekend — giełda GPW nie pracuje (ostatnia sesja z piątku)';
@@ -388,15 +497,40 @@ function renderHeroSection(data) {
       liveBadge.textContent = 'Giełda: Weekend';
       liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30';
     }
-  } else {
-    if (headerWeekendTag) headerWeekendTag.classList.add('hidden');
+  } else if (sessionInfo.isHolidayNow) {
+    if (headerWeekendTag) {
+      headerWeekendTag.classList.remove('hidden');
+      headerWeekendTag.textContent = `🏛️ Święto: ${sessionInfo.holidayName}`;
+      headerWeekendTag.title = `Dziś na GPW nie ma sesji ze względu na święto: ${sessionInfo.holidayName}`;
+    }
     if (headerDot) {
-      headerDot.className = 'w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse';
-      headerDot.title = 'Sesja giełdowa w toku / rynek aktywny';
+      headerDot.className = 'w-2 h-2 rounded-full bg-amber-400 shrink-0';
+      headerDot.title = `Dziś na GPW nie ma sesji ze względu na święto: ${sessionInfo.holidayName}`;
     }
     if (liveBadge) {
-      liveBadge.textContent = 'Live';
-      liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20';
+      liveBadge.textContent = 'Giełda: Święto';
+      liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30';
+    }
+  } else {
+    if (headerWeekendTag) headerWeekendTag.classList.add('hidden');
+    if (sessionInfo.isTradingHours) {
+      if (headerDot) {
+        headerDot.className = 'w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse';
+        headerDot.title = 'Sesja giełdowa na GPW w toku (notowania ciągłe 09:00 - 17:05)';
+      }
+      if (liveBadge) {
+        liveBadge.textContent = 'Live';
+        liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20';
+      }
+    } else {
+      if (headerDot) {
+        headerDot.className = 'w-2 h-2 rounded-full bg-slate-400 shrink-0';
+        headerDot.title = sessionInfo.state === 'PRE_MARKET' ? 'Przed sesją (początek notowań o 09:00)' : 'Po sesji GPW (zakończona o 17:05)';
+      }
+      if (liveBadge) {
+        liveBadge.textContent = sessionInfo.state === 'PRE_MARKET' ? 'Przed sesją' : 'Po sesji';
+        liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-500/15 text-slate-300 border border-slate-500/30';
+      }
     }
   }
 
@@ -434,8 +568,13 @@ function renderHeroSection(data) {
     const d = new Date(data.updated_at);
     const formattedDate = d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const formattedTime = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-    const weekendSuffix = sessionInfo.isWeekendNow ? ' (Weekend • giełda zamknięta)' : '';
-    updateTs.textContent = `Ostatnia aktualizacja: ${formattedDate}, ${formattedTime}${weekendSuffix}`;
+    let marketSuffix = '';
+    if (sessionInfo.isWeekendNow) {
+      marketSuffix = ' (Weekend • giełda zamknięta)';
+    } else if (sessionInfo.isHolidayNow) {
+      marketSuffix = ` (Dziś święto: ${sessionInfo.holidayName} • GPW nie handluje)`;
+    }
+    updateTs.textContent = `Ostatnia aktualizacja: ${formattedDate}, ${formattedTime}${marketSuffix}`;
   }
 
   const conclusions = data.conclusions || {};

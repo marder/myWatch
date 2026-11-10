@@ -5,6 +5,7 @@ const analyzer = require('./analyzer');
 const db = require('./db');
 const mailer = require('./mailer');
 const notifier = require('./notifier');
+const holidayCalendar = require('./holidayCalendar');
 
 let isUpdating = false;
 
@@ -77,6 +78,11 @@ function startCronJob() {
 
   cron.schedule(schedule, async () => {
     console.log(`[Scheduler] Cron trigger activated at ${new Date().toISOString()}`);
+    const marketStatus = holidayCalendar.getMarketStatus();
+    if (marketStatus.isHoliday && marketStatus.isGpwClosed) {
+      console.log(`[Scheduler] Dziś na GPW nie ma sesji ze względu na święto: ${marketStatus.holidayName}. Pomijanie automatycznej aktualizacji.`);
+      return;
+    }
     try {
       await runUpdate();
     } catch (err) {

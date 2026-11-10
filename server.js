@@ -10,6 +10,7 @@ const scheduler = require('./src/scheduler');
 const auth = require('./src/auth');
 const mailer = require('./src/mailer');
 const notifier = require('./src/notifier');
+const holidayCalendar = require('./src/holidayCalendar');
 
 const app = express();
 const startTime = Date.now();
@@ -275,10 +276,25 @@ app.get('/api/latest', auth.requireAuth, (req, res) => {
     delete latest.warnings_json;
     delete latest.conclusions_json;
 
+    // Attach current GPW market and holiday status
+    latest.market_status = holidayCalendar.getMarketStatus();
+
     res.json(latest);
   } catch (err) {
     console.error('Error fetching /api/latest:', err);
     res.status(500).json({ error: 'Nie udało się pobrać najnowszego odczytu', message: err.message });
+  }
+});
+
+/**
+ * GET /api/market-status
+ * Returns current Warsaw Stock Exchange session state, trading hours, and Polish holidays
+ */
+app.get('/api/market-status', (req, res) => {
+  try {
+    res.json(holidayCalendar.getMarketStatus());
+  } catch (err) {
+    res.status(500).json({ error: 'Błąd sprawdzania statusu sesji', message: err.message });
   }
 });
 
