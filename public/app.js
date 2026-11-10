@@ -32,6 +32,7 @@ function getAuthHeaders(extra = {}) {
  * Switch view to logged-in dashboard
  */
 function showAppView() {
+  document.documentElement.classList.add('is-authenticated');
   const loginScreen = document.getElementById('login-screen');
   const appContent = document.getElementById('app-content');
   if (loginScreen) loginScreen.classList.add('hidden');
@@ -42,6 +43,7 @@ function showAppView() {
  * Switch view to login screen
  */
 function showLoginScreen() {
+  document.documentElement.classList.remove('is-authenticated');
   const loginScreen = document.getElementById('login-screen');
   const appContent = document.getElementById('app-content');
   if (appContent) appContent.classList.add('hidden');
@@ -54,6 +56,7 @@ function showLoginScreen() {
  * Handle session expiration or unauthorized response
  */
 function handleAuthRequired() {
+  document.documentElement.classList.remove('is-authenticated');
   state.adminToken = null;
   localStorage.removeItem('macro_radar_token');
   sessionStorage.removeItem('macro_radar_token');
@@ -166,19 +169,25 @@ async function loadDashboard() {
     state.history = historyRes.ok ? await historyRes.json() : [];
     state.news = newsRes.ok ? await newsRes.json() : [];
 
-    // Render components
-    renderPlainLanguageSection(state.latest?.conclusions?.plain_language);
-    renderGpwIndices(state.latest?.conclusions?.gpw_indices);
-    renderHeroSection(state.latest);
-    const allocRec = state.latest?.conclusions?.portfolio_recommendation || 
-      (await fetch('/api/allocation', { headers }).then(r => r.ok ? r.json() : null).catch(() => null));
-    renderAllocationSection(allocRec);
-    renderFundamentalValuation(state.latest?.conclusions?.fundamental_valuation);
-    renderKpiCards(state.latest);
-    renderWarnings(state.latest.warnings || []);
-    renderNewsSection(state.news);
-    renderHistoryTable(state.history);
-    renderCharts(state.history);
+    // Render components defensively so a single element never blocks the whole view
+    try { renderPlainLanguageSection(state.latest?.conclusions?.plain_language); } catch (e) { console.warn('renderPlainLanguageSection:', e); }
+    try { renderGpwIndices(state.latest?.conclusions?.gpw_indices); } catch (e) { console.warn('renderGpwIndices:', e); }
+    try { renderHeroSection(state.latest); } catch (e) { console.warn('renderHeroSection:', e); }
+
+    let allocRec = state.latest?.conclusions?.portfolio_recommendation;
+    if (!allocRec) {
+      try {
+        allocRec = await fetch('/api/allocation', { headers }).then(r => r.ok ? r.json() : null).catch(() => null);
+      } catch (e) {}
+    }
+
+    try { renderAllocationSection(allocRec); } catch (e) { console.warn('renderAllocationSection:', e); }
+    try { renderFundamentalValuation(state.latest?.conclusions?.fundamental_valuation); } catch (e) { console.warn('renderFundamentalValuation:', e); }
+    try { renderKpiCards(state.latest); } catch (e) { console.warn('renderKpiCards:', e); }
+    try { renderWarnings(state.latest.warnings || []); } catch (e) { console.warn('renderWarnings:', e); }
+    try { renderNewsSection(state.news); } catch (e) { console.warn('renderNewsSection:', e); }
+    try { renderHistoryTable(state.history); } catch (e) { console.warn('renderHistoryTable:', e); }
+    try { renderCharts(state.history); } catch (e) { console.warn('renderCharts:', e); }
 
     if (healthRes.ok) {
       const health = await healthRes.json();
@@ -1654,8 +1663,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Verify authentication state and mount view
+  // Verify authentication state and mount view immediately without flicker
   if (state.adminToken) {
+    showAppView();
+    loadDashboard();
     fetch('/api/auth/me', {
       headers: { 'Authorization': `Bearer ${state.adminToken}` }
     })
@@ -1666,8 +1677,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (userLabel) userLabel.textContent = d.user || 'Użytkownik';
           const adminUserLabel = document.getElementById('admin-username-label');
           if (adminUserLabel) adminUserLabel.textContent = d.user || 'Użytkownik';
-          showAppView();
-          loadDashboard();
         } else {
           handleAuthRequired();
         }

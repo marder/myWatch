@@ -28,7 +28,24 @@
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Instant Anti-Flicker Script for Authenticated Users -->
+  <script>
+    try {
+      if (localStorage.getItem('macro_radar_token') || sessionStorage.getItem('macro_radar_token')) {
+        document.documentElement.classList.add('is-authenticated');
+      }
+    } catch (e) {}
+  </script>
+
   <style>
+    /* Instant Anti-Flicker: prevent showing login screen on page reload when authenticated */
+    html.is-authenticated #login-screen {
+      display: none !important;
+    }
+    html.is-authenticated #app-content {
+      display: flex !important;
+    }
+
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
     body {
       font-family: 'Inter', sans-serif;
@@ -403,11 +420,6 @@
             Wyloguj się
           </button>
         </div>
-      </div>
-
-    </div>
-  </div>
-
       </div>
 
     </div>
