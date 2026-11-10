@@ -107,17 +107,17 @@ function showToast(message, type = 'success') {
       <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
       </svg>`;
-    toast.className = 'fixed bottom-5 right-5 z-50 transform translate-y-0 opacity-100 transition-all duration-300 bg-slate-900 border border-emerald-500/40 text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3';
+    toast.className = 'fixed bottom-5 right-5 z-[9999] transform translate-y-0 opacity-100 transition-all duration-300 bg-slate-900 border border-emerald-500/40 text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3';
   } else {
     toastIcon.innerHTML = `
       <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
       </svg>`;
-    toast.className = 'fixed bottom-5 right-5 z-50 transform translate-y-0 opacity-100 transition-all duration-300 bg-slate-900 border border-rose-500/40 text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3';
+    toast.className = 'fixed bottom-5 right-5 z-[9999] transform translate-y-0 opacity-100 transition-all duration-300 bg-slate-900 border border-rose-500/40 text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3';
   }
 
   setTimeout(() => {
-    toast.className = 'fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-slate-700 text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3';
+    toast.className = 'fixed bottom-5 right-5 z-[9999] transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-slate-700 text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3';
   }, 4000);
 }
 
@@ -1352,12 +1352,7 @@ async function handleRefreshClick() {
 function openAdminModal() {
   const modal = document.getElementById('admin-modal');
   modal.classList.remove('hidden');
-
-  if (state.adminToken) {
-    showAdminDashboard();
-  } else {
-    showLoginView();
-  }
+  showAdminDashboard();
 }
 
 function closeAdminModal() {
@@ -1546,40 +1541,23 @@ async function handleLogout() {
 }
 
 async function handleDownloadDatabase() {
-  if (!state.adminToken) return;
-
-  const btn = document.getElementById('btn-download-db');
-  btn.disabled = true;
-  btn.classList.add('opacity-50');
-
-  try {
-    const res = await fetch('/api/admin/db/download', {
-      headers: { 'Authorization': `Bearer ${state.adminToken}` }
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const dateStr = new Date().toISOString().slice(0, 10);
-    a.download = `macro_radar_backup_${dateStr}.db`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    showToast('Plik bazy danych został pobrany na dysk!', 'success');
-  } catch (err) {
-    showToast(`Błąd pobierania bazy: ${err.message}`, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.classList.remove('opacity-50');
+  if (!state.adminToken) {
+    showToast('Wymagane logowanie do serwisu.', 'error');
+    return;
   }
+
+  showToast('Rozpoczęto pobieranie pliku bazy danych na dysk...', 'success');
+  // Use direct native browser download with session token query parameter
+  const downloadUrl = `/api/admin/db/download?token=${encodeURIComponent(state.adminToken)}`;
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.download = `macro_radar_backup_${dateStr}.db`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    a.remove();
+  }, 1000);
 }
 
 async function handleSendEmailBackup() {

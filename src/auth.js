@@ -35,12 +35,18 @@ function revokeToken(token) {
  * Express middleware to protect admin endpoints
  */
 function requireAuth(req, res, next) {
+  let token = null;
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  } else if (req.query && req.query.token) {
+    token = req.query.token;
+  }
+
+  if (!token) {
     return res.status(401).json({ error: 'Wymagana autoryzacja (Brak tokenu).' });
   }
 
-  const token = authHeader.slice(7).trim();
   if (!activeTokens.has(token)) {
     return res.status(401).json({ error: 'Nieprawidłowy lub wygasły token sesji.' });
   }
