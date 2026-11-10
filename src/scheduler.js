@@ -96,14 +96,14 @@ function startCronJob() {
     timezone,
   });
 
-  // Dodatkowe powiadomienie o godzinie 21:10 (Europe/Warsaw)
-  console.log(`[Scheduler] Initializing additional notification cron: '10 21 * * *' (${timezone})`);
-  cron.schedule('10 21 * * *', async () => {
-    console.log(`[Scheduler] 21:10 Notification trigger activated at ${new Date().toISOString()}`);
+  // Dodatkowe powiadomienie o godzinie 22:10 (Europe/Warsaw)
+  console.log(`[Scheduler] Initializing additional notification cron: '10 22 * * *' (${timezone})`);
+  cron.schedule('10 22 * * *', async () => {
+    console.log(`[Scheduler] 22:10 Notification trigger activated at ${new Date().toISOString()}`);
     try {
       await runUpdate();
     } catch (err) {
-      console.warn('[Scheduler] 21:10 refresh error, dispatching existing latest reading:', err.message);
+      console.warn('[Scheduler] 22:10 refresh error, dispatching existing latest reading:', err.message);
       const latestReading = db.getLatestReading();
       if (latestReading) {
         await notifier.dispatchSessionNotifications(latestReading);
