@@ -28,10 +28,13 @@ async function runUpdate() {
 
     db.upsertReading(latestReading);
 
-    // Dispatch push and email notifications asynchronously
-    notifier.dispatchSessionNotifications(latestReading).catch(err => {
+    // Dispatch push and email notifications
+    try {
+      const notifyResult = await notifier.dispatchSessionNotifications(latestReading);
+      console.log('[Scheduler] Notifications dispatch result:', JSON.stringify(notifyResult));
+    } catch (err) {
       console.warn('[Scheduler] Session notifications error:', err.message);
-    });
+    }
 
     const elapsed = Date.now() - startTime;
     console.log(`[Scheduler] Successfully refreshed and saved reading for ${latestReading.timestamp} (Score: ${latestReading.risk_score}, Status: ${latestReading.status}) in ${elapsed}ms`);

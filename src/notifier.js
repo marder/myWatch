@@ -44,6 +44,7 @@ function getStatusVisuals(status, riskScore) {
 
 /**
  * Send Push Notification via ntfy.sh (No registration required)
+ * Uses native JSON body to fully support UTF-8 (emojis and Polish characters)
  */
 async function sendNtfyNotification({ title, message, priority, tags, clickUrl, topic } = {}) {
   if (!config.ntfy.enabled) {
@@ -55,19 +56,27 @@ async function sendNtfyNotification({ title, message, priority, tags, clickUrl, 
     throw new Error('Brak zdefiniowanego tematu ntfy.sh (NTFY_TOPIC).');
   }
 
-  const endpoint = `${config.ntfy.server.replace(/\/+$/, '')}/${encodeURIComponent(targetTopic)}`;
-  const headers = {
-    'Title': title || 'Poland Macro Crisis Radar',
-    'Priority': priority || 'default',
-    'Tags': tags || 'chart_with_upwards_trend',
-    'Click': clickUrl || config.ntfy.clickUrl || 'https://watch.mikrus.dev',
+  const serverUrl = config.ntfy.server.replace(/\/+$/, '');
+  const tagsList = typeof tags === 'string'
+    ? tags.split(',').map(t => t.trim()).filter(Boolean)
+    : (Array.isArray(tags) ? tags : ['chart_with_upwards_trend']);
+
+  const payload = {
+    topic: targetTopic,
+    title: title || 'Poland Macro Crisis Radar',
+    message: message || 'Nowy odczyt wskaźników makro i rekomendacji portfela OKI.',
+    priority: priority || 'default',
+    tags: tagsList,
+    click: clickUrl || config.ntfy.clickUrl || 'https://watch.mikrus.dev',
   };
 
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch(serverUrl, {
       method: 'POST',
-      headers,
-      body: message || 'Nowy odczyt wskaźników makro i rekomendacji portfela OKI.',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
@@ -80,7 +89,7 @@ async function sendNtfyNotification({ title, message, priority, tags, clickUrl, 
     return {
       success: true,
       topic: targetTopic,
-      url: `${config.ntfy.server.replace(/\/+$/, '')}/${targetTopic}`,
+      url: `${serverUrl}/${targetTopic}`,
       response: data,
     };
   } catch (err) {
