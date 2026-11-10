@@ -32,7 +32,8 @@ module.exports = {
     smtp: {
       host: process.env.SMTP_HOST || '',
       port: parseInt(process.env.SMTP_PORT, 10) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
+      // Port 465 requires SSL/TLS (secure: true); port 587/25 uses STARTTLS
+      secure: process.env.SMTP_SECURE === 'true' || (!process.env.SMTP_SECURE && (parseInt(process.env.SMTP_PORT, 10) === 465)),
       user: process.env.SMTP_USER || '',
       pass: process.env.SMTP_PASS || '',
     }
