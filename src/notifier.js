@@ -2,14 +2,14 @@ const config = require('../config');
 const mailer = require('./mailer');
 
 /**
- * Format tag and emoji based on risk status
+ * Format tag, emoji, and numeric priority based on risk status
  */
 function getStatusVisuals(status, riskScore) {
   switch (status) {
     case 'ALARM KRYZYSOWY':
       return {
         tag: 'rotating_light,fire',
-        priority: 'urgent',
+        priority: 5,
         badgeColor: '#e11d48', // rose-600
         textColor: '#ffe4e6',
         emoji: '🚨',
@@ -17,7 +17,7 @@ function getStatusVisuals(status, riskScore) {
     case 'PODWYŻSZONE RYZYKO':
       return {
         tag: 'warning,chart_with_downwards_trend',
-        priority: 'high',
+        priority: 4,
         badgeColor: '#ea580c', // orange-600
         textColor: '#ffedd5',
         emoji: '🟠',
@@ -25,7 +25,7 @@ function getStatusVisuals(status, riskScore) {
     case 'OSTRZEŻENIE':
       return {
         tag: 'caution,eyes',
-        priority: 'default',
+        priority: 3,
         badgeColor: '#d97706', // amber-600
         textColor: '#fef3c7',
         emoji: '🟡',
@@ -34,11 +34,37 @@ function getStatusVisuals(status, riskScore) {
     default:
       return {
         tag: 'white_check_mark,chart_with_upwards_trend',
-        priority: 'default',
+        priority: 3,
         badgeColor: '#059669', // emerald-600
         textColor: '#d1fae5',
         emoji: '🟢',
       };
+  }
+}
+
+/**
+ * Converts priority to integer (1..5) as required by ntfy JSON API
+ */
+function mapPriorityToInt(priority) {
+  if (typeof priority === 'number') return Math.min(Math.max(priority, 1), 5);
+  switch (String(priority).toLowerCase()) {
+    case '5':
+    case 'max':
+    case 'urgent':
+      return 5;
+    case '4':
+    case 'high':
+      return 4;
+    case '2':
+    case 'low':
+      return 2;
+    case '1':
+    case 'min':
+      return 1;
+    case '3':
+    case 'default':
+    default:
+      return 3;
   }
 }
 
@@ -65,7 +91,7 @@ async function sendNtfyNotification({ title, message, priority, tags, clickUrl, 
     topic: targetTopic,
     title: title || 'Poland Macro Crisis Radar',
     message: message || 'Nowy odczyt wskaźników makro i rekomendacji portfela OKI.',
-    priority: priority || 'default',
+    priority: mapPriorityToInt(priority),
     tags: tagsList,
     click: clickUrl || config.ntfy.clickUrl || 'https://watch.mikrus.dev',
   };
