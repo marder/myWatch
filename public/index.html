@@ -137,7 +137,7 @@
           <h1 class="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-white flex items-center gap-1.5 sm:gap-2 truncate">
             <span class="sm:hidden truncate">Radar Makro PL</span>
             <span class="hidden sm:inline">Radar Makroekonomiczny Polski & GPW</span>
-            <span class="hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Live</span>
+            <span id="live-indicator-badge" class="hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">Live</span>
           </h1>
           <p class="text-[10px] sm:text-xs text-slate-400 truncate sm:block">
             <span class="sm:hidden">NBP • Rynek Skarbowy • GPW</span>
@@ -148,9 +148,12 @@
 
       <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
         <!-- Date Badge -->
-        <div class="hidden lg:flex items-center text-xs bg-slate-800/80 border border-slate-700/60 px-3 py-1.5 rounded-lg text-slate-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
-          <span>Sesja: <strong id="header-date" class="font-mono-numbers text-white ml-1">Wczytywanie...</strong></span>
+        <div id="header-date-badge" class="hidden md:flex items-center text-xs bg-slate-800/80 border border-slate-700/60 px-2.5 sm:px-3 py-1.5 rounded-lg text-slate-300 gap-1.5">
+          <span id="header-market-dot" class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
+          <span>Sesja: <strong id="header-date" class="font-mono-numbers text-white ml-0.5">Wczytywanie...</strong></span>
+          <span id="header-weekend-tag" class="hidden text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-sans">
+            ⏸️ Weekend
+          </span>
         </div>
 
         <!-- Logged User Badge -->
@@ -207,23 +210,23 @@
   <!-- ========================================== -->
   <!-- ADMIN & DATABASE BACKUP MODAL              -->
   <!-- ========================================== -->
-  <div id="admin-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div id="admin-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full max-h-[88vh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       
       <!-- Modal Header -->
-      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 shrink-0">
+        <div class="flex items-center space-x-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <div>
-            <h3 class="text-sm font-bold text-white">Panel Administracyjny Bazy Danych</h3>
-            <p class="text-[11px] text-slate-400">Pobieranie bazy na dysk, backup e-mail i głęboki backfill</p>
+          <div class="min-w-0">
+            <h3 class="text-sm font-bold text-white truncate">Panel Administracyjny — Baza, Backup & Alerty</h3>
+            <p class="text-[11px] text-slate-400 truncate">Zarządzanie bazą SQLite, powiadomieniami push i kopiami zapasowymi</p>
           </div>
         </div>
-        <button id="close-modal-btn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+        <button id="close-modal-btn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition shrink-0 ml-2" title="Zamknij okno">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -231,12 +234,12 @@
       </div>
 
       <!-- Modal Content: LOGIN VIEW -->
-      <div id="admin-login-view" class="p-6 space-y-4">
+      <div id="admin-login-view" class="p-5 sm:p-6 space-y-4 overflow-y-auto">
         <div class="bg-slate-950/60 border border-slate-800 p-3.5 rounded-xl text-xs text-slate-300">
           <p>Dostęp do zarządzania bazą danych (pobieranie pliku <code>.db</code>, wysyłka e-mail, rozszerzony backfill) wymaga logowania administratora.</p>
         </div>
 
-        <form id="login-form" class="space-y-4">
+        <form id="login-form" class="space-y-4 max-w-sm mx-auto">
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">Login:</label>
             <input type="text" id="login-user" placeholder="Wpisz login" required autocomplete="username" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-sky-500 font-mono-numbers">
@@ -247,82 +250,136 @@
           </div>
           <div id="login-error" class="text-xs text-rose-400 hidden"></div>
           <button type="submit" class="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-lg transition shadow-md shadow-sky-900/30">
-            Zaloguj się do bazy danych
+            Zaloguj się do panelu
           </button>
         </form>
       </div>
 
       <!-- Modal Content: ADMIN LOGGED-IN VIEW -->
-      <div id="admin-dashboard-view" class="p-6 space-y-5 hidden">
+      <div id="admin-dashboard-view" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 hidden">
         
         <!-- Status & Stats Bar -->
-        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3 sm:p-3.5">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold text-slate-300">Stan Bazy SQLite (WAL Mode):</span>
             <span class="text-[11px] font-mono-numbers text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Aktywna</span>
           </div>
           <div class="grid grid-cols-3 gap-2 text-center text-xs">
             <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
-              <span class="text-slate-400 block text-[10px]">Wpisy:</span>
+              <span class="text-slate-400 block text-[10px]">Wpisy w bazie:</span>
               <strong id="admin-stat-count" class="font-mono-numbers text-white">--</strong>
             </div>
             <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
-              <span class="text-slate-400 block text-[10px]">Rozmiar:</span>
+              <span class="text-slate-400 block text-[10px]">Rozmiar pliku:</span>
               <strong id="admin-stat-size" class="font-mono-numbers text-white">-- KB</strong>
             </div>
             <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
-              <span class="text-slate-400 block text-[10px]">Zakres:</span>
+              <span class="text-slate-400 block text-[10px]">Zakres historii:</span>
               <strong id="admin-stat-range" class="font-mono-numbers text-white text-[10px]">--</strong>
             </div>
           </div>
         </div>
 
-        <!-- Action 1: Download Database File -->
-        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div>
-            <h4 class="text-xs font-bold text-slate-200">Pobierz plik bazy danych na dysk</h4>
-            <p class="text-[11px] text-slate-400">Eksportuje plik <code>macro_radar.db</code> ze zrzutem WAL.</p>
-          </div>
-          <button id="btn-download-db" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md shadow-emerald-900/30 flex items-center justify-center gap-2 transition">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span>Pobierz .db</span>
-          </button>
-        </div>
-
-        <!-- Action 2: Email Backup -->
-        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold text-slate-200">Wyślij kopię bazy danych na e-mail</h4>
-            <span id="smtp-status-badge" class="text-[10px] px-2 py-0.5 rounded border text-slate-400 border-slate-700">Weryfikacja SMTP...</span>
-          </div>
-          <div class="flex flex-col sm:flex-row gap-2">
-            <input type="email" id="email-backup-input" placeholder="Wpisz adres e-mail (np. twoj@email.pl)" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 font-mono-numbers">
-            <button id="btn-send-email-backup" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        <!-- Row 1: 2-column grid for Database Export & Email Backup -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          
+          <!-- Action 1: Download Database File -->
+          <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-3.5 flex flex-col justify-between">
+            <div class="mb-3">
+              <div class="flex items-center space-x-1.5 text-emerald-400 text-xs font-bold mb-1">
+                <span>💾</span>
+                <span>Kopia Lokalna (.db)</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Pobierz plik bazy danych ze zrzutem WAL na dysk.</p>
+            </div>
+            <button id="btn-download-db" class="w-full px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md shadow-emerald-900/30 flex items-center justify-center gap-1.5 transition">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              <span>Wyślij backup</span>
+              <span>Pobierz macro_radar.db</span>
             </button>
           </div>
-          <p class="text-[10px] text-slate-500">Cykliczny harmonogram e-mail w tle: w każdą niedzielę o 03:00 (konfigurowalny w config.js).</p>
+
+          <!-- Action 2: Email Backup -->
+          <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-3.5 flex flex-col justify-between space-y-2.5">
+            <div>
+              <div class="flex items-center justify-between gap-1 mb-1">
+                <div class="flex items-center space-x-1.5 text-indigo-400 text-xs font-bold">
+                  <span>📬</span>
+                  <span>Kopia na E-mail</span>
+                </div>
+                <span id="smtp-status-badge" class="text-[9px] px-1.5 py-0.5 rounded border text-slate-400 border-slate-700">Weryfikacja SMTP...</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Wyślij plik bazy jako załącznik na e-mail.</p>
+            </div>
+            <div class="flex gap-1.5">
+              <input type="email" id="email-backup-input" placeholder="np. twoj@email.pl" class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 font-mono-numbers">
+              <button id="btn-send-email-backup" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shrink-0 transition">
+                <span>Wyślij</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Row 2: 2-column grid for Push (ntfy.sh) & Daily HTML Email Digest -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+          <!-- Action 4: Push Notifications (ntfy.sh) -->
+          <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-3.5 flex flex-col justify-between space-y-2.5">
+            <div>
+              <div class="flex items-center justify-between gap-1 mb-1">
+                <div class="flex items-center space-x-1.5 text-sky-400 text-xs font-bold">
+                  <span>🔔</span>
+                  <span>Powiadomienia Push (ntfy.sh)</span>
+                </div>
+                <span id="ntfy-status-badge" class="text-[9px] px-1.5 py-0.5 rounded border text-emerald-400 border-emerald-500/30 bg-emerald-500/10">Aktywne</span>
+              </div>
+              <p class="text-[11px] text-slate-400">
+                Kanał: <a id="ntfy-topic-link" href="https://ntfy.sh/radar-makro-pl-xd333r" target="_blank" class="text-sky-400 font-mono-numbers underline font-bold">radar-makro-pl-xd333r</a>
+              </p>
+            </div>
+            <button id="btn-test-ntfy" class="w-full px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5">
+              <span>Wyślij test ntfy.sh</span>
+            </button>
+          </div>
+
+          <!-- Action 5: Daily HTML Email Digest Test -->
+          <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-3.5 flex flex-col justify-between space-y-2.5">
+            <div>
+              <div class="flex items-center justify-between gap-1 mb-1">
+                <div class="flex items-center space-x-1.5 text-purple-400 text-xs font-bold">
+                  <span>✉️</span>
+                  <span>Raport Dzienny HTML (E-mail)</span>
+                </div>
+                <span id="email-digest-badge" class="text-[9px] px-1.5 py-0.5 rounded border text-slate-400 border-slate-700 truncate max-w-[120px]">xd333r@gmail.com</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Podsumowanie sesji i rekomendacje OKI (o 18:35).</p>
+            </div>
+            <div class="flex gap-1.5">
+              <input type="email" id="test-email-digest-input" value="xd333r@gmail.com" placeholder="Odbiorca" class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers focus:outline-none focus:border-sky-500">
+              <button id="btn-test-email-digest" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs shrink-0 transition">
+                <span>Wyślij test</span>
+              </button>
+            </div>
+          </div>
+
         </div>
 
         <!-- Action 3: Deep Backfill -->
-        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
-          <div>
-            <h4 class="text-xs font-bold text-slate-200">Pobierz dłuższą historię danych (Głęboki Backfill)</h4>
-            <p class="text-[11px] text-slate-400">Możesz zasilić bazę większą liczbą sesji historycznych.</p>
+        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-3.5 space-y-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <h4 class="text-xs font-bold text-slate-200">Głęboki Backfill Historii Giełdowej</h4>
+            <span class="text-[10px] text-slate-400">Pobierz i przelicz dłuższą historię sesji</span>
           </div>
           <div class="flex flex-col sm:flex-row items-center gap-2">
-            <select id="backfill-days-select" class="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
-              <option value="250" selected>250 sesji (pełny rok giełdowy - domyślny)</option>
+            <select id="backfill-days-select" class="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500">
+              <option value="250" selected>250 sesji (pełny rok giełdowy)</option>
               <option value="120">120 sesji (ok. pół roku)</option>
               <option value="60">60 sesji (ok. 3 miesiące)</option>
             </select>
-            <button id="btn-run-backfill" class="w-full sm:w-auto flex-1 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button id="btn-run-backfill" class="w-full sm:w-auto flex-1 px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span>Uruchom i przelicz historię</span>
@@ -330,58 +387,26 @@
           </div>
         </div>
 
-        <!-- Action 4: Push Notifications (ntfy.sh) -->
-        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <span class="text-base">🔔</span>
-              <div>
-                <h4 class="text-xs font-bold text-slate-200">Powiadomienia Push na Telefon (ntfy.sh)</h4>
-                <p class="text-[11px] text-slate-400">Prywatne, natychmiastowe powiadomienia bez rejestracji i bez zbierania numeru telefonu.</p>
-              </div>
-            </div>
-            <span id="ntfy-status-badge" class="text-[10px] px-2 py-0.5 rounded border text-emerald-400 border-emerald-500/30 bg-emerald-500/10 shrink-0">ntfy.sh Aktywne</span>
-          </div>
-          <div class="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
-            <div class="text-[11px] text-slate-300 truncate">
-              Kanał: <a id="ntfy-topic-link" href="https://ntfy.sh/radar-makro-pl-xd333r" target="_blank" class="text-sky-400 font-mono-numbers underline font-bold">radar-makro-pl-xd333r</a>
-            </div>
-            <button id="btn-test-ntfy" class="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5">
-              <span>Wyślij test ntfy.sh</span>
-            </button>
-          </div>
-          <p class="text-[10px] text-slate-500 leading-relaxed">
-            Zainstaluj darmową aplikację <strong>ntfy</strong> (Android / iOS) i zasubskrybuj powyższy temat, aby otrzymywać powiadomienia po każdej sesji.
-          </p>
-        </div>
+      </div>
 
-        <!-- Action 5: Daily HTML Email Digest Test -->
-        <div class="border border-slate-800/90 bg-slate-950/40 rounded-xl p-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <span class="text-base">✉️</span>
-              <div>
-                <h4 class="text-xs font-bold text-slate-200">Raport Dzienny na E-mail (HTML Digest)</h4>
-                <p class="text-[11px] text-slate-400">Podsumowanie sesji z wytycznymi OKI wysyłane o 18:35 po zamknięciu rynku.</p>
-              </div>
-            </div>
-            <span id="email-digest-badge" class="text-[10px] px-2 py-0.5 rounded border text-slate-400 border-slate-700 shrink-0">xd333r@gmail.com</span>
-          </div>
-          <div class="flex flex-col sm:flex-row gap-2">
-            <input type="email" id="test-email-digest-input" value="xd333r@gmail.com" placeholder="Adres odbiorcy" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white font-mono-numbers focus:outline-none focus:border-sky-500">
-            <button id="btn-test-email-digest" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
-              <span>Wyślij testowy raport HTML</span>
-            </button>
-          </div>
+      <!-- Sticky Modal Footer -->
+      <div class="px-5 py-3 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs text-slate-400 shrink-0">
+        <div class="flex items-center space-x-1.5">
+          <span>👤 Zalogowano jako:</span>
+          <strong id="admin-username-label" class="text-slate-200 font-mono-numbers">--</strong>
         </div>
-
-        <!-- Logout button -->
-        <div class="pt-2 flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/60">
-          <span>Zalogowano jako: <strong id="admin-username-label" class="text-slate-300">--</strong></span>
-          <button id="btn-logout" class="text-rose-400 hover:text-rose-300 font-semibold transition">
+        <div class="flex items-center space-x-2">
+          <button id="btn-modal-close-footer" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+            Zamknij
+          </button>
+          <button id="btn-logout" class="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 font-semibold text-xs transition">
             Wyloguj się
           </button>
         </div>
+      </div>
+
+    </div>
+  </div>
 
       </div>
 
@@ -1086,7 +1111,10 @@
     <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-3 sm:mb-4">
         <div>
-          <h3 class="text-xs sm:text-sm font-bold text-slate-200">Rejestr Ostatnich 10 Sesji Giełdowych</h3>
+          <h3 class="text-xs sm:text-sm font-bold text-slate-200 flex flex-wrap items-center gap-1.5">
+            <span>Rejestr Ostatnich 10 Sesji Giełdowych</span>
+            <span class="text-[11px] font-normal text-slate-400 font-sans">(sesje wyłącznie w dni robocze Pn–Pt)</span>
+          </h3>
           <p class="text-[11px] sm:text-xs text-slate-400">Szczegółowe parametry składowe modelu kryzysowego</p>
         </div>
         <div class="flex items-center gap-2">

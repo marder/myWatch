@@ -328,13 +328,68 @@ function renderNewsSection(newsList) {
 }
 
 /**
+ * Helper: Check market trading session and weekend status
+ */
+function getMarketSessionInfo(sessionDateStr) {
+  const now = new Date();
+  const warsawNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' }));
+  const currentDayOfWeek = warsawNow.getDay(); // 0 is Sunday, 6 is Saturday
+  const isWeekendNow = currentDayOfWeek === 0 || currentDayOfWeek === 6;
+
+  let sessionDayName = '';
+  if (sessionDateStr) {
+    try {
+      const sDate = new Date(sessionDateStr + 'T12:00:00Z');
+      const dayRaw = new Intl.DateTimeFormat('pl-PL', { weekday: 'short' }).format(sDate);
+      sessionDayName = dayRaw.charAt(0).toUpperCase() + dayRaw.slice(1).replace('.', '');
+    } catch (e) {}
+  }
+
+  return {
+    isWeekendNow,
+    currentDayOfWeek,
+    sessionDayName,
+  };
+}
+
+/**
  * Render Hero Section: Score, Gauge, Progress Bars, Conclusions
  */
 function renderHeroSection(data) {
   if (!data) return;
 
+  const sessionInfo = getMarketSessionInfo(data.timestamp);
   const headerDate = document.getElementById('header-date');
-  if (headerDate) headerDate.textContent = data.timestamp || '--';
+  const headerDot = document.getElementById('header-market-dot');
+  const headerWeekendTag = document.getElementById('header-weekend-tag');
+  const liveBadge = document.getElementById('live-indicator-badge');
+
+  if (headerDate) {
+    const daySuffix = sessionInfo.sessionDayName ? ` (${sessionInfo.sessionDayName})` : '';
+    headerDate.textContent = `${data.timestamp || '--'}${daySuffix}`;
+  }
+
+  if (sessionInfo.isWeekendNow) {
+    if (headerWeekendTag) headerWeekendTag.classList.remove('hidden');
+    if (headerDot) {
+      headerDot.className = 'w-2 h-2 rounded-full bg-amber-400 shrink-0';
+      headerDot.title = 'Dziś jest weekend — giełda GPW nie pracuje (ostatnia sesja z piątku)';
+    }
+    if (liveBadge) {
+      liveBadge.textContent = 'Giełda: Weekend';
+      liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30';
+    }
+  } else {
+    if (headerWeekendTag) headerWeekendTag.classList.add('hidden');
+    if (headerDot) {
+      headerDot.className = 'w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse';
+      headerDot.title = 'Sesja giełdowa w toku / rynek aktywny';
+    }
+    if (liveBadge) {
+      liveBadge.textContent = 'Live';
+      liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20';
+    }
+  }
 
   const statusCfg = STATUS_CONFIG[data.status] || STATUS_CONFIG['STABILNY'];
   const statusPill = document.getElementById('status-pill');
@@ -367,7 +422,11 @@ function renderHeroSection(data) {
 
   const updateTs = document.getElementById('update-timestamp');
   if (updateTs && data.updated_at) {
-    updateTs.textContent = `Przeliczono: ${new Date(data.updated_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`;
+    const d = new Date(data.updated_at);
+    const formattedDate = d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const formattedTime = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    const weekendSuffix = sessionInfo.isWeekendNow ? ' (Weekend • giełda zamknięta)' : '';
+    updateTs.textContent = `Ostatnia aktualizacja: ${formattedDate}, ${formattedTime}${weekendSuffix}`;
   }
 
   const conclusions = data.conclusions || {};
@@ -1534,6 +1593,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const closeModalBtn = document.getElementById('close-modal-btn');
   if (closeModalBtn) closeModalBtn.addEventListener('click', closeAdminModal);
+
+  const closeModalFooterBtn = document.getElementById('btn-modal-close-footer');
+  if (closeModalFooterBtn) closeModalFooterBtn.addEventListener('click', closeAdminModal);
 
   // Admin form and action events
   const loginForm = document.getElementById('login-form');
