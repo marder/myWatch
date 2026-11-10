@@ -1152,20 +1152,33 @@
   </main>
 
   <!-- Footer -->
-  <footer class="border-t border-slate-800/80 bg-slate-950 py-4 text-center text-xs text-slate-500">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <div>Poland Macro Crisis Radar • <span class="text-amber-400/90 font-medium">Projekt wyłącznie do użytku osobistego twórcy (nie stanowi porady inwestycyjnej)</span></div>
-      <div class="flex items-center space-x-4">
-        <span>Dane: NBP, Yahoo Finance, GPW, Bankier.pl</span>
-        <span>•</span>
-        <span id="footer-uptime">Uptime: --</span>
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-4 text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="text-center md:text-left">
+        <div>Poland Macro Crisis Radar • <span class="text-amber-400/90 font-medium">Projekt do użytku osobistego twórcy (nie stanowi porady inwestycyjnej)</span></div>
+        <div class="text-[11px] text-slate-600 mt-0.5">Dane: NBP, GPW Benchmark, Stooq, Yahoo Finance, Bankier.pl</div>
+      </div>
+      <div class="flex flex-wrap items-center justify-center md:justify-end gap-2 text-[11px] font-mono-numbers text-slate-400">
+        <span class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800/80 px-2.5 py-1 rounded-lg">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Host: <strong id="footer-hostname" class="text-slate-200">--</strong></span>
+        </span>
+        <span class="bg-slate-900/90 border border-slate-800/80 px-2.5 py-1 rounded-lg">
+          Load: <strong id="footer-load" class="text-sky-400">--</strong>
+        </span>
+        <span class="bg-slate-900/90 border border-slate-800/80 px-2.5 py-1 rounded-lg">
+          RAM: <strong id="footer-ram" class="text-slate-200">--</strong>
+        </span>
+        <span class="bg-slate-900/90 border border-slate-800/80 px-2.5 py-1 rounded-lg">
+          Uptime: <strong id="footer-uptime" class="text-slate-200">--</strong>
+        </span>
       </div>
     </div>
   </footer>
 
   </div> <!-- Close #app-content -->
 
-  <!-- Frontend Logic -->
-  <script src="/app.js"></script>
+  <!-- Frontend Logic with Cache-Busting -->
+  <script src="/app.js?v=2.2"></script>
 </body>
 </html>

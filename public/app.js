@@ -194,7 +194,24 @@ async function loadDashboard() {
       const footerUptime = document.getElementById('footer-uptime');
       if (footerUptime) {
         const mins = Math.floor(health.uptimeSeconds / 60);
-        footerUptime.textContent = `Uptime: ${mins} min (${health.recordsCount} odczytów w bazie)`;
+        const hours = Math.floor(mins / 60);
+        const remMins = mins % 60;
+        footerUptime.textContent = hours > 0 ? `${hours}h ${remMins}m` : `${mins} min`;
+      }
+      const footerHost = document.getElementById('footer-hostname');
+      if (footerHost && health.server?.hostname) {
+        footerHost.textContent = health.server.hostname;
+        footerHost.title = `Platforma: ${health.server.platform || ''}`;
+      }
+      const footerLoad = document.getElementById('footer-load');
+      if (footerLoad && health.server?.loadSummary) {
+        footerLoad.textContent = health.server.loadSummary;
+        footerLoad.title = `Średnie obciążenie CPU: 1m, 5m (${health.server.cpus || 1} rdzeni)`;
+      }
+      const footerRam = document.getElementById('footer-ram');
+      if (footerRam && health.server?.ramSummary) {
+        footerRam.textContent = health.server.ramSummary;
+        footerRam.title = `Zużycie pamięci operacyjnej RAM`;
       }
     }
   } catch (err) {

@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const express = require('express');
 const config = require('./config');
 const db = require('./src/db');
@@ -413,6 +414,12 @@ app.post('/api/allocation/calculate', auth.requireAuth, (req, res) => {
 app.get('/api/health', (req, res) => {
   try {
     const info = db.getOldestAndLatestTimestamp();
+    const load = os.loadavg ? os.loadavg() : [0, 0, 0];
+    const totalMemMb = Math.round(os.totalmem() / (1024 * 1024));
+    const freeMemMb = Math.round(os.freemem() / (1024 * 1024));
+    const usedMemMb = Math.max(0, totalMemMb - freeMemMb);
+    const memPct = totalMemMb > 0 ? Math.round((usedMemMb / totalMemMb) * 100) : 0;
+
     res.json({
       status: 'OK',
       recordsCount: info.count,
@@ -420,6 +427,20 @@ app.get('/api/health', (req, res) => {
       oldestTimestamp: info.oldest,
       uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),
       timestamp: new Date().toISOString(),
+      server: {
+        hostname: os.hostname(),
+        platform: `${os.type()} ${os.release()}`,
+        arch: os.arch(),
+        cpus: os.cpus()?.length || 1,
+        load1m: parseFloat(load[0].toFixed(2)),
+        load5m: parseFloat(load[1].toFixed(2)),
+        load15m: parseFloat(load[2].toFixed(2)),
+        loadSummary: `${load[0].toFixed(2)}, ${load[1].toFixed(2)}`,
+        ramUsedMb: usedMemMb,
+        ramTotalMb: totalMemMb,
+        ramUsagePct: memPct,
+        ramSummary: `${usedMemMb}/${totalMemMb} MB (${memPct}%)`,
+      },
     });
   } catch (err) {
     res.status(500).json({ status: 'ERROR', message: err.message });

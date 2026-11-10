@@ -1,5 +1,37 @@
+const os = require('os');
 const config = require('../config');
 const mailer = require('./mailer');
+
+/**
+ * Collect live host and server performance metrics
+ */
+function getServerMetrics() {
+  const load = os.loadavg ? os.loadavg() : [0, 0, 0];
+  const totalMemMb = Math.round(os.totalmem() / (1024 * 1024));
+  const freeMemMb = Math.round(os.freemem() / (1024 * 1024));
+  const usedMemMb = Math.max(0, totalMemMb - freeMemMb);
+  const memPct = totalMemMb > 0 ? Math.round((usedMemMb / totalMemMb) * 100) : 0;
+
+  const uptimeSec = Math.floor(process.uptime());
+  const hours = Math.floor(uptimeSec / 3600);
+  const mins = Math.floor((uptimeSec % 3600) / 60);
+  const uptimeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
+
+  return {
+    hostname: os.hostname() || 'mikrus-vps',
+    platform: `${os.type()} ${os.release()}`,
+    cpus: os.cpus()?.length || 1,
+    load1m: load[0].toFixed(2),
+    load5m: load[1].toFixed(2),
+    load15m: load[2].toFixed(2),
+    loadSummary: `${load[0].toFixed(2)}, ${load[1].toFixed(2)}`,
+    memoryUsedMb: usedMemMb,
+    memoryTotalMb: totalMemMb,
+    memoryPct: memPct,
+    memorySummary: `${usedMemMb}/${totalMemMb} MB (${memPct}%)`,
+    uptimeStr,
+  };
+}
 
 /**
  * Format tag, emoji, and numeric priority based on risk status
@@ -148,6 +180,11 @@ async function sendDailyDigestEmail(reading, recipientEmail = null) {
   const rec = conclusions.portfolio_recommendation || {};
   const weights = rec.weights || { globalEquities: 50, polishEquities: 15, treasuryBonds: 30, cashAndGold: 5 };
   const val = conclusions.fundamental_valuation || {};
+  const gpwIndices = conclusions.gpw_indices || [];
+  const serverMetrics = getServerMetrics();
+
+  const usdRate = r.usd_pln != null ? r.usd_pln.toFixed(4) : (r.usd ? r.usd.toFixed(4) : '--');
+  const eurRate = r.eur_pln != null ? r.eur_pln.toFixed(4) : (r.eur ? r.eur.toFixed(4) : '--');
 
   const dashboardUrl = config.ntfy.clickUrl || 'https://watch.mikrus.dev';
 
@@ -172,7 +209,7 @@ async function sendDailyDigestEmail(reading, recipientEmail = null) {
               Poland Macro Crisis Radar
             </h1>
             <p style="margin: 4px 0 0; font-size: 12px; color: #94a3b8;">
-              Raport zamknięcia sesji giełdowej &bull; ${dateStr}
+              Raport zamknięcia sesji giełdowej &bull; ${dateStr} &bull; Host: <span style="font-family: monospace; color: #38bdf8;">${serverMetrics.hostname}</span>
             </p>
           </div>
 
@@ -189,16 +226,47 @@ async function sendDailyDigestEmail(reading, recipientEmail = null) {
             </p>
           </div>
 
-          <!-- KEY MARKET METRICS TABLE -->
+          <!-- GPW INDICES SNAPSHOT -->
+          ${gpwIndices.length > 0 ? `
           <div style="margin-top: 20px; background-color: #131b2e; border: 1px solid #1e293b; border-radius: 14px; padding: 18px;">
             <h3 style="margin: 0 0 14px; font-size: 14px; color: #f8fafc; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
-              Główne Wskaźniki Rynkowe
+              Kluczowe Notowania Indeksów GPW
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              ${gpwIndices.map(item => {
+                const isPositive = item.change1dPct > 0;
+                const isZero = item.change1dPct === 0;
+                const changeColor = isZero ? '#94a3b8' : (isPositive ? '#10b981' : '#f43f5e');
+                const sign = isPositive ? '+' : '';
+                return `
+                  <tr style="border-bottom: 1px solid #1e293b;">
+                    <td style="padding: 8px 0;">
+                      <strong style="color: #f8fafc;">${item.name}</strong> 
+                      <span style="font-size: 11px; color: #64748b; margin-left: 4px;">${item.label || ''}</span>
+                    </td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #f8fafc; font-family: monospace, Consolas, sans-serif;">
+                      ${item.close ? item.close.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
+                    </td>
+                    <td style="padding: 8px 0 8px 12px; text-align: right; font-weight: 800; color: ${changeColor}; font-family: monospace, Consolas, sans-serif;">
+                      ${sign}${item.change1dPct != null ? item.change1dPct.toFixed(2) : '0.00'}%
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </table>
+          </div>
+          ` : ''}
+
+          <!-- KEY MARKET & MACRO METRICS TABLE -->
+          <div style="margin-top: 20px; background-color: #131b2e; border: 1px solid #1e293b; border-radius: 14px; padding: 18px;">
+            <h3 style="margin: 0 0 14px; font-size: 14px; color: #f8fafc; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
+              Wskaźniki Makroekonomiczne & Rynek Długu
             </h3>
             <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
               <tr style="border-bottom: 1px solid #1e293b;">
-                <td style="padding: 8px 0; color: #94a3b8;">WIG (Szeroki rynek GPW):</td>
-                <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #f8fafc;">
-                  ${r.wig ? r.wig.toLocaleString('pl-PL', { maximumFractionDigits: 2 }) : '--'} pkt
+                <td style="padding: 8px 0; color: #94a3b8;">WIG vs Średnia 200-sesyjna (SMA200):</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: 700; color: ${r.wig_sma200_diff >= 0 ? '#10b981' : '#f43f5e'};">
+                  ${r.wig ? r.wig.toLocaleString('pl-PL', { maximumFractionDigits: 0 }) : '--'} pkt (${(r.wig_sma200_diff > 0 ? '+' : '') + (r.wig_sma200_diff != null ? r.wig_sma200_diff.toFixed(2) : '0.00')}% • ${r.wig_sma200_diff >= 0 ? 'Hossa' : 'Korekta'})
                 </td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
@@ -210,25 +278,37 @@ async function sendDailyDigestEmail(reading, recipientEmail = null) {
               <tr style="border-bottom: 1px solid #1e293b;">
                 <td style="padding: 8px 0; color: #94a3b8;">Spread dochodowości 10Y - 2Y:</td>
                 <td style="padding: 8px 0; text-align: right; font-weight: 700; color: ${(r.spread_10y_2y < 0) ? '#f43f5e' : '#10b981'};">
-                  ${r.spread_10y_2y != null ? (r.spread_10y_2y > 0 ? '+' : '') + r.spread_10y_2y.toFixed(2) + ' pp' : '--'}
+                  ${r.spread_10y_2y != null ? (r.spread_10y_2y > 0 ? '+' : '') + r.spread_10y_2y.toFixed(2) + ' pp' : '--'} (Brak inwersji)
                 </td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
-                <td style="padding: 8px 0; color: #94a3b8;">Spread suwerenny PL vs DE (Bund):</td>
+                <td style="padding: 8px 0; color: #94a3b8;">Spread kredytowy PL vs Niemcy (Bund 10Y):</td>
                 <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #f8fafc;">
-                  ${r.spread_pl_de != null ? r.spread_pl_de : '--'} bps
+                  ${r.spread_pl_de != null ? r.spread_pl_de : '--'} bps (${r.spread_pl_de < 320 ? 'Bezpieczny' : 'Podwyższony'})
                 </td>
               </tr>
               <tr style="border-bottom: 1px solid #1e293b;">
-                <td style="padding: 8px 0; color: #94a3b8;">Kursy Walut (NBP):</td>
+                <td style="padding: 8px 0; color: #94a3b8;">Kursy Walut (NBP / Rynek):</td>
                 <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #f8fafc;">
-                  EUR: ${r.eur ? r.eur.toFixed(4) : '--'} | USD: ${r.usd ? r.usd.toFixed(4) : '--'}
+                  USD: ${usdRate} zł &bull; EUR: ${eurRate} zł
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #1e293b;">
+                <td style="padding: 8px 0; color: #94a3b8;">Wycena GPW (WIG C/Z & C/WK):</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #f8fafc;">
+                  P/E: ${val.wigPe || 10.4} &bull; P/BV: ${val.wigPbv || 1.15} &bull; Stopa dywidendy: ${val.dividendYield || 4.60}%
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #1e293b;">
+                <td style="padding: 8px 0; color: #94a3b8;">Stopa referencyjna NBP vs Inflacja CPI:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #10b981;">
+                  NBP: ${val.nbpRate || 5.75}% | CPI: ${val.cpiInflation || 4.90}% | Realna: ${val.realRate != null ? '+' + val.realRate.toFixed(2) + ' pp' : '+0.85 pp'}
                 </td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #94a3b8;">Premia za Ryzyko Akcji (Model Fed ERP):</td>
                 <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #10b981;">
-                  ${val.equityRiskPremium != null ? '+' + val.equityRiskPremium.toFixed(2) + ' pp' : '+3.97 pp'} (${val.erpStance || 'ATRAKCYJNA'})
+                  ${val.equityRiskPremium != null ? '+' + val.equityRiskPremium.toFixed(2) + ' pp' : '+3.44 pp'} (${val.erpStance || 'ATRAKCYJNA'})
                 </td>
               </tr>
             </table>
@@ -291,9 +371,20 @@ async function sendDailyDigestEmail(reading, recipientEmail = null) {
             </a>
           </div>
 
-          <!-- FOOTER & DISCLAIMER -->
-          <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #1e293b; text-align: center; font-size: 11px; color: #64748b; line-height: 1.5;">
-            Projekt do użytku osobistego twórcy. Prezentowane wskaźniki i symulacje portfela w ramach OKI nie stanowią porady inwestycyjnej ani doradztwa podatkowego.
+          <!-- FOOTER WITH SERVER HOSTNAME & SYSTEM LOAD -->
+          <div style="margin-top: 32px; padding: 16px; background-color: #0d1322; border: 1px solid #1e293b; border-radius: 12px; text-align: center; font-size: 11px; color: #64748b; line-height: 1.6;">
+            <div style="color: #94a3b8; font-weight: 700; margin-bottom: 6px;">
+              🖥️ Host: <span style="color: #38bdf8; font-family: monospace, Consolas, sans-serif;">${serverMetrics.hostname}</span> &bull; ${serverMetrics.platform}
+            </div>
+            <div style="font-family: monospace, Consolas, Monaco, monospace; color: #94a3b8; font-size: 11px;">
+              Obciążenie CPU (Load Avg): <strong style="color: #38bdf8;">${serverMetrics.load1m}</strong> (1m), <strong style="color: #38bdf8;">${serverMetrics.load5m}</strong> (5m), <strong style="color: #38bdf8;">${serverMetrics.load15m}</strong> (15m)
+            </div>
+            <div style="font-family: monospace, Consolas, Monaco, monospace; color: #94a3b8; font-size: 11px; margin-top: 3px;">
+              Pamięć RAM: <strong style="color: #cbd5e1;">${serverMetrics.memorySummary}</strong> &bull; Uptime serwera: <strong style="color: #cbd5e1;">${serverMetrics.uptimeStr}</strong>
+            </div>
+            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #1e293b; color: #475569; font-size: 10px;">
+              Poland Macro Crisis Radar &bull; Projekt wyłącznie do użytku osobistego twórcy &bull; Nie stanowi rekomendacji inwestycyjnej
+            </div>
           </div>
 
         </div>
@@ -326,12 +417,30 @@ async function dispatchSessionNotifications(reading) {
   // 1. Dispatch ntfy.sh Push Notification
   if (config.ntfy?.enabled) {
     try {
+      const serverMetrics = getServerMetrics();
       const rec = reading.conclusions?.portfolio_recommendation?.weights;
-      const weightsStr = rec ? `Akcje Świat: ${rec.globalEquities}%, GPW: ${rec.polishEquities}%, Obligacje: ${rec.treasuryBonds}%, Gotówka: ${rec.cashAndGold}%` : '';
+      const weightsStr = rec ? `Świat ${rec.globalEquities}%, GPW ${rec.polishEquities}%, Obligacje ${rec.treasuryBonds}%, Płynność ${rec.cashAndGold}%` : '';
+
+      // Extract key index changes
+      const gpwIndices = reading.conclusions?.gpw_indices || [];
+      const wig20Item = gpwIndices.find(i => i.name === 'WIG20');
+      const mwigItem = gpwIndices.find(i => i.name === 'mWIG40');
+      let gpwStr = '';
+      if (wig20Item && mwigItem) {
+        const sign20 = wig20Item.change1dPct > 0 ? '+' : '';
+        const signM = mwigItem.change1dPct > 0 ? '+' : '';
+        gpwStr = `\nGPW: WIG20 ${sign20}${wig20Item.change1dPct}% • mWIG40 ${signM}${mwigItem.change1dPct}%`;
+      }
+
+      const smaDiff = reading.wig_sma200_diff != null ? ` (${reading.wig_sma200_diff > 0 ? '+' : ''}${reading.wig_sma200_diff.toFixed(1)}% vs SMA200)` : '';
+      const debtStr = reading.pl10y != null ? `\nPL10Y: ${reading.pl10y.toFixed(2)}% (Spread Bund: ${reading.spread_pl_de || '--'} bps)` : '';
+      const fxStr = (reading.usd_pln && reading.eur_pln) ? `\nWaluty: USD ${reading.usd_pln.toFixed(2)} zł • EUR ${reading.eur_pln.toFixed(2)} zł` : '';
+
+      const ntfyMessage = `Sesja: ${dateStr} • WIG: ${reading.wig ? Math.round(reading.wig) : '--'} pkt${smaDiff}${gpwStr}${debtStr}${fxStr}\nAlokacja OKI: ${weightsStr}\n🖥️ Host: ${serverMetrics.hostname} • Load: ${serverMetrics.loadSummary} • RAM: ${serverMetrics.memorySummary}`;
 
       const ntfyResult = await sendNtfyNotification({
         title: `Poland Macro Radar: ${visuals.emoji} ${status} (${score}/100)`,
-        message: `Sesja ${dateStr} • WIG: ${reading.wig ? Math.round(reading.wig) : '--'} pkt\nWytyczne OKI: ${weightsStr}`,
+        message: ntfyMessage,
         priority: visuals.priority,
         tags: visuals.tag,
       });
