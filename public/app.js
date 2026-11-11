@@ -422,6 +422,20 @@ function getClientHolidayInfo(dateKey) {
 }
 
 /**
+ * Format a concise, clean holiday badge text for navbar
+ */
+function formatHolidayBadge(name) {
+  if (!name) return '🏛️ Święto';
+  let clean = String(name)
+    .replace(/^Narodowe\s+Święto\s+/i, 'Święto ')
+    .replace(/\s*\(brak sesji GPW\)/i, '')
+    .replace(/\s*\([^\)]*\)/g, '')
+    .trim();
+  if (/Wniebowzięcie/i.test(clean)) clean = 'Wniebowzięcie NMP';
+  return `🏛️ ${clean}`;
+}
+
+/**
  * Helper: Check market trading session, weekend and Polish holiday status
  */
 function getMarketSessionInfo(sessionDateStr, marketStatus) {
@@ -511,13 +525,13 @@ function renderHeroSection(data) {
       headerDot.title = 'Dziś jest weekend — giełda GPW nie pracuje (ostatnia sesja z piątku)';
     }
     if (liveBadge) {
-      liveBadge.textContent = 'Giełda: Weekend';
-      liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30';
+      liveBadge.textContent = 'Weekend';
+      liveBadge.className = 'hidden xl:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30';
     }
   } else if (sessionInfo.isHolidayNow) {
     if (headerWeekendTag) {
       headerWeekendTag.classList.remove('hidden');
-      headerWeekendTag.textContent = `🏛️ Święto: ${sessionInfo.holidayName}`;
+      headerWeekendTag.textContent = formatHolidayBadge(sessionInfo.holidayName);
       headerWeekendTag.title = `Dziś na GPW nie ma sesji ze względu na święto: ${sessionInfo.holidayName}`;
     }
     if (headerDot) {
@@ -525,8 +539,8 @@ function renderHeroSection(data) {
       headerDot.title = `Dziś na GPW nie ma sesji ze względu na święto: ${sessionInfo.holidayName}`;
     }
     if (liveBadge) {
-      liveBadge.textContent = 'Giełda: Święto';
-      liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30';
+      liveBadge.textContent = 'Święto';
+      liveBadge.className = 'hidden xl:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30';
     }
   } else {
     if (headerWeekendTag) headerWeekendTag.classList.add('hidden');
@@ -537,7 +551,7 @@ function renderHeroSection(data) {
       }
       if (liveBadge) {
         liveBadge.textContent = 'Live';
-        liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20';
+        liveBadge.className = 'hidden xl:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20';
       }
     } else {
       if (headerDot) {
@@ -546,7 +560,7 @@ function renderHeroSection(data) {
       }
       if (liveBadge) {
         liveBadge.textContent = sessionInfo.state === 'PRE_MARKET' ? 'Przed sesją' : 'Po sesji';
-        liveBadge.className = 'hidden md:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-500/15 text-slate-300 border border-slate-500/30';
+        liveBadge.className = 'hidden xl:inline-flex text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-500/15 text-slate-300 border border-slate-500/30';
       }
     }
   }
