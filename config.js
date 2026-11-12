@@ -14,7 +14,9 @@ if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') {
 module.exports = {
   port: parseInt(process.env.PORT, 10) || 8000,
   dbPath: path.resolve(__dirname, './data/macro_radar.db'),
-  cronSchedule: process.env.CRON_SCHEDULE || '30 18 * * 1-5',
+  cronSchedule: (process.env.CRON_SCHEDULE && process.env.CRON_SCHEDULE !== '30 18 * * 1-5')
+    ? process.env.CRON_SCHEDULE
+    : '10 17 * * 1-5', // Mon-Fri at 17:10 Europe/Warsaw (earliest stable slot right after GPW closes at 17:05)
   timezone: 'Europe/Warsaw',
 
   // Authentication configuration (strictly loaded from .env)
@@ -42,7 +44,9 @@ module.exports = {
   // Daily Market HTML Email Digest configuration
   emailDigest: {
     enabled: process.env.EMAIL_DIGEST_ENABLED !== 'false',
-    schedule: process.env.EMAIL_DIGEST_SCHEDULE || '35 18 * * 1-5', // Mon-Fri at 18:35 Europe/Warsaw
+    schedule: (process.env.EMAIL_DIGEST_SCHEDULE && process.env.EMAIL_DIGEST_SCHEDULE !== '35 18 * * 1-5')
+      ? process.env.EMAIL_DIGEST_SCHEDULE
+      : '10 17 * * 1-5', // Mon-Fri at 17:10 Europe/Warsaw (immediately after GPW close at 17:05)
     to: process.env.EMAIL_DIGEST_TO || 'xd333r@gmail.com',
     from: process.env.EMAIL_DIGEST_FROM || '"Poland Macro Crisis Radar" <radar@macro-radar.local>',
   },

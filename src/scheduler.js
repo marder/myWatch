@@ -77,36 +77,31 @@ function startCronJob() {
   const schedule = config.cronSchedule;
   const timezone = config.timezone;
 
-  console.log(`[Scheduler] Initializing market cron: '${schedule}' (${timezone})`);
+  console.log(`[Scheduler] Initializing post-market cron: '${schedule}' (${timezone}) - GPW closes at 17:05, notification at 17:10`);
 
   cron.schedule(schedule, async () => {
-    console.log(`[Scheduler] Cron trigger activated at ${new Date().toISOString()}`);
+    console.log(`[Scheduler] Post-market trigger activated at ${new Date().toISOString()}`);
     const marketStatus = holidayCalendar.getMarketStatus();
     if (marketStatus.isHoliday && marketStatus.isGpwClosed) {
       console.log(`[Scheduler] Dziś na GPW nie ma sesji ze względu na święto: ${marketStatus.holidayName}. Pomijanie automatycznej aktualizacji.`);
+      return;
+    }
+    if (marketStatus.isWeekend) {
+      console.log(`[Scheduler] Dziś jest weekend — giełda GPW nie handluje. Pomijanie powiadomienia.`);
       return;
     }
     try {
       await runUpdate();
     } catch (err) {
       console.error('[Scheduler] Scheduled refresh failed:', err.message);
-    }
-  }, {
-    scheduled: true,
-    timezone,
-  });
-
-  // Dodatkowe powiadomienie o godzinie 22:10 (Europe/Warsaw)
-  console.log(`[Scheduler] Initializing additional notification cron: '10 22 * * *' (${timezone})`);
-  cron.schedule('10 22 * * *', async () => {
-    console.log(`[Scheduler] 22:10 Notification trigger activated at ${new Date().toISOString()}`);
-    try {
-      await runUpdate();
-    } catch (err) {
-      console.warn('[Scheduler] 22:10 refresh error, dispatching existing latest reading:', err.message);
-      const latestReading = db.getLatestReading();
-      if (latestReading) {
-        await notifier.dispatchSessionNotifications(latestReading);
+      try {
+        const latestReading = db.getLatestReading();
+        if (latestReading) {
+          console.log('[Scheduler] Dispatching fallback latest reading after refresh error...');
+          await notifier.dispatchSessionNotifications(latestReading);
+        }
+      } catch (notifyErr) {
+        console.error('[Scheduler] Fallback notification also failed:', notifyErr.message);
       }
     }
   }, {

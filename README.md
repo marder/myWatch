@@ -131,7 +131,7 @@ Wszystkie parametry konfiguracyjne i poświadczenia zarządzane są przez plik `
 | `PORT` | `8000` | Port, na którym nasłuchuje serwer HTTP |
 | `ADMIN_USER` | `admin` | Login administratora bazy danych |
 | `ADMIN_PASSWORD` | *(brak)* | Hasło administratora (ustaw w `.env`) |
-| `CRON_SCHEDULE` | `30 18 * * 1-5` | Harmonogram aktualizacji rynkowej (Pn-Pt 18:30) |
+| `CRON_SCHEDULE` | `10 17 * * 1-5` | Harmonogram aktualizacji rynkowej i powiadomień (Pn-Pt 17:10, zaraz po zamknięciu GPW o 17:05) |
 | `BACKFILL_DAYS` | `60` | Liczba sesji pobieranych przy pierwszym uruchomieniu |
 | `EMAIL_BACKUP_ENABLED` | `false` | Czy włączyć automatyczny backup na e-mail |
 | `BACKUP_EMAIL_TO` | `twoj@email.pl` | Adres odbiorcy kopii bazy danych |
